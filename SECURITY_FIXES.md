@@ -10,7 +10,7 @@
 
 This document tracks the implementation of security and functionality fixes identified in the Codex audit reports. All **critical** and **high-priority** fixes have been implemented and tested.
 
-### ✅ Fixes Implemented (7/7 Critical & High)
+### ✅ Fixes Implemented (8/8 Critical & High)
 
 | ID | Severity | Issue | Status | Commit |
 |---|---|---|---|---|
@@ -21,6 +21,7 @@ This document tracks the implementation of security and functionality fixes iden
 | F-02 | High | Evidence viewer field errors | ✅ Fixed | `cccb647` |
 | B3 | High | SoA CSV export uses query string auth | ✅ Fixed | `4628911` |
 | B11 | High | Compliance export cross-tenant leak | ✅ Fixed | `8c88173` |
+| B12 | High | /reports/score cross-tenant leak | ✅ Fixed | `4c64804` |
 
 ### 🔄 Deferred (Out of Scope - Production)
 
@@ -322,6 +323,60 @@ The latest Codex report (dated after commit `cccb647`) still reports some issues
 
 ---
 
+## 🆕 **B12: /reports/score Cross-Tenant Leak** ✅
+
+**Problem:** `/reports/score` accepted an optional `org_id` query parameter and used it without validation, allowing cross-tenant compliance score leakage.
+
+**Attack Scenario:**
+```bash
+# Attacker from Org A requests Org B's scores:
+curl -H "X-API-Key: org-a-key" "http://api/reports/score?org_id=2"
+# Before fix: Returns Org B's compliance scores and per-system metrics
+# After fix: Ignores org_id parameter, returns only authenticated org's data
+```
+
+**Solution:**
+- Removed `org_id` parameter from endpoint signature
+- Always use `org.id` from authenticated API key
+
+**Code Changes:** `backend/app/api/routes/reports.py` (lines 125-132)
+```python
+# BEFORE (vulnerable):
+async def get_score(
+    org_id: int | None = None,  # ❌ Accepts any org_id
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    org_id = org.id if org_id is None else org_id  # ❌ Uses attacker's value
+
+# AFTER (secure):
+async def get_score(
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    org_id = org.id  # ✅ Always use authenticated org
+```
+
+**Testing:**
+```bash
+# Test 1: With malicious org_id parameter
+curl -H "X-API-Key: dev-aims-demo-key" "http://127.0.0.1:8002/reports/score?org_id=999"
+# Result: Returns authenticated org's data (ignores org_id=999) ✅
+
+# Test 2: Without parameter
+curl -H "X-API-Key: dev-aims-demo-key" "http://127.0.0.1:8002/reports/score"
+# Result: Same data as Test 1 ✅
+```
+
+**Severity:** 🔴 HIGH (CVSS 7.5)  
+**Credit:** Identified by Codex security audit  
+**Related:** Similar pattern to B11 (compliance export)
+
+**Files Modified:**
+- `backend/app/api/routes/reports.py`
+
+---
+
 ## 🆕 **B11: Compliance Export Cross-Tenant Leak** ✅
 
 **Problem:** `export_document()` queried AISystem by ID without validating organization ownership, allowing cross-tenant data leakage.
@@ -348,10 +403,42 @@ if system_id:
 
 ---
 
+## 🎉 **UX Enhancement: FRIA Wizard Downloads** ✅
+
+**Problem:** FRIA wizard used `window.open()` without authentication headers, causing downloads to fail with 401 errors despite backend protection (F-01).
+
+**Solution:**
+- Replaced `window.open()` with `downloadFile()` helper
+- Now sends `X-API-Key` headers properly
+
+**Code Changes:** `frontend/components/fria-wizard.tsx` (lines 88-113)
+```typescript
+// BEFORE (broken UX):
+onClick={() => window.open(`${API_URL}${friaResult.md_url}`, '_blank')}
+
+// AFTER (working):
+onClick={async () => {
+  try {
+    await downloadFile(friaResult.md_url, 'fria-document.md');
+  } catch (error) {
+    alert('Download failed. Please check your API key.');
+  }
+}}
+```
+
+**Impact:** Users can now successfully download FRIA documents  
+**Type:** UX improvement (not security - backend was already protected)
+
+**Files Modified:**
+- `frontend/components/fria-wizard.tsx`
+
+---
+
 ## 📅 Change Log
 
 | Date | Commit | Description |
 |---|---|---|
+| 2025-01-16 | `4c64804` | Fix B12: /reports/score cross-tenant + FRIA wizard UX |
 | 2025-01-16 | `8c88173` | Fix B11: Compliance export cross-tenant leak |
 | 2025-01-16 | `4628911` | Fix B3: SoA CSV export authentication |
 | 2025-01-16 | `cccb647` | Implement F-10, F-01, F-04, F-05/F-06, F-02 |
