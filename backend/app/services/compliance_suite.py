@@ -440,11 +440,21 @@ Generated: {timestamp}
             Tuple of (filename, content_bytes)
         """
         
+        # Validate system ownership if system_id provided
+        system = None
+        if system_id:
+            system = db.query(AISystem).filter(
+                AISystem.id == system_id,
+                AISystem.org_id == org_id  # Enforce org scoping to prevent cross-tenant leak
+            ).first()
+            if not system:
+                raise ValueError(f"System {system_id} not found or access denied")
+        
         # Generate document content
         doc_result = self._generate_document(
             db, 
             db.query(Organization).filter(Organization.id == org_id).first(),
-            db.query(AISystem).filter(AISystem.id == system_id).first() if system_id else None,
+            system,  # Use validated system
             doc_type
         )
         
