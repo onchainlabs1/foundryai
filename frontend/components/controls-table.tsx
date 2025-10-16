@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { api } from '@/lib/api'
+import { api, downloadFile } from '@/lib/api'
 
 interface Control {
   id?: number
@@ -79,10 +79,13 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
     setControls(updated)
   }
 
-  const handleExportSoA = () => {
-    const apiKey = localStorage.getItem('apiKey')
-    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002'}/systems/${systemId}/soa.csv`
-    window.open(url + (apiKey ? `?api_key=${apiKey}` : ''), '_blank')
+  const handleExportSoA = async () => {
+    try {
+      await downloadFile(`/systems/${systemId}/soa.csv`, 'statement-of-applicability.csv');
+    } catch (error) {
+      console.error('SoA export failed:', error);
+      alert('Export failed. Please check your API key.');
+    }
   }
 
   const getStatusColor = (status: string) => {
