@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { api } from '@/lib/api'
+import { api, downloadFile } from '@/lib/api'
 
 const FRIA_QUESTIONS = [
   { id: 'q1', text: 'Does the system process biometric data?', key: 'biometric_data' },
@@ -87,13 +87,27 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002'}${friaResult.md_url}`, '_blank')}
+                onClick={async () => {
+                  try {
+                    await downloadFile(friaResult.md_url, 'fria-document.md');
+                  } catch (error) {
+                    console.error('FRIA download failed:', error);
+                    alert('Download failed. Please check your API key.');
+                  }
+                }}
               >
                 Download Markdown
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002'}${friaResult.html_url}`, '_blank')}
+                onClick={async () => {
+                  try {
+                    await downloadFile(friaResult.html_url, 'fria-document.html');
+                  } catch (error) {
+                    console.error('FRIA download failed:', error);
+                    alert('Download failed. Please check your API key.');
+                  }
+                }}
               >
                 Download HTML
               </Button>

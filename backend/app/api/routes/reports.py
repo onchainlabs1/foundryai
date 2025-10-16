@@ -124,12 +124,12 @@ async def annex_zip(
 
 @router.get("/score", response_model=ScoreResponse)
 async def get_score(
-    org_id: int | None = None,
     org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     # Compute simple scores per contract; MVP coverage based on Evidence vs Controls
-    org_id = org.id if org_id is None else org_id
+    # Always use authenticated org (prevent cross-tenant data leak)
+    org_id = org.id
 
     systems = db.query(AISystem).filter(AISystem.org_id == org_id).all()
     by_system = []
