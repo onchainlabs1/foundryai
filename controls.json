@@ -1,0 +1,6 @@
+{
+  "controls": [
+    {"system_id":4,"iso_clause":"6.1","name":"Risk management process","priority":"high","owner_email":"ana@org.eu","due_date":"2025-10-21","status":"partial"},
+    {"system_id":4,"iso_clause":"9.1","name":"Logging & monitoring plan","priority":"high","owner_email":"ana@org.eu","due_date":"2025-10-21","status":"missing"}
+  ]
+}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIMS Readiness - Compliance Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: #1a1a1a; color: white; padding: 30px 0; margin-bottom: 30px; }
+        h1 { font-size: 2rem; margin-bottom: 10px; }
+        .meta { color: #999; font-size: 0.9rem; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card h2 { color: #1a1a1a; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .metric { background: #f8f9fa; padding: 20px; border-radius: 6px; text-align: center; }
+        .metric-value { font-size: 2.5rem; font-weight: bold; color: #1a1a1a; }
+        .metric-label { color: #666; font-size: 0.9rem; margin-top: 5px; }
+        .high-risk { color: #dc2626; }
+        .medium-risk { color: #ea580c; }
+        .low-risk { color: #16a34a; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; text-align: left; padding: 12px; font-weight: 600; border-bottom: 2px solid #dee2e6; }
+        td { padding: 12px; border-bottom: 1px solid #dee2e6; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-limited { background: #fef3c7; color: #d97706; }
+        .badge-minimal { background: #d1fae5; color: #16a34a; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; color: #666; font-size: 0.85rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🎯 AIMS Readiness - Compliance Report</h1>
+            <div class="meta">
+                Organization: On-Chain Labs Governance | Generated: October 13, 2025 | ISO/IEC 42001 + EU AI Act
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>Executive Summary</h2>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value">12</div>
+                    <div class="metric-label">Total AI Systems</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value high-risk">3</div>
+                    <div class="metric-label">High-Risk Systems</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value medium-risk">5</div>
+                    <div class="metric-label">Limited Risk</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">78%</div>
+                    <div class="metric-label">Compliance Score</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>AI Systems by Risk Classification</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>System Name</th>
+                        <th>Domain</th>
+                        <th>AI Act Class</th>
+                        <th>Owner</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Facial Recognition Access Control</td>
+                        <td>Security</td>
+                        <td><span class="badge badge-high">HIGH</span></td>
+                        <td>security@example.com</td>
+                        <td>✅ Compliant</td>
+                    </tr>
+                    <tr>
+                        <td>Credit Risk Assessment Engine</td>
+                        <td>Finance</td>
+                        <td><span class="badge badge-high">HIGH</span></td>
+                        <td>risk@example.com</td>
+                        <td>⚠️ In Progress</td>
+                    </tr>
+                    <tr>
+                        <td>HR Candidate Screening</td>
+                        <td>Human Resources</td>
+                        <td><span class="badge badge-high">HIGH</span></td>
+                        <td>hr@example.com</td>
+                        <td>❌ Gap Identified</td>
+                    </tr>
+                    <tr>
+                        <td>Customer Support Chatbot</td>
+                        <td>Customer Service</td>
+                        <td><span class="badge badge-limited">LIMITED</span></td>
+                        <td>support@example.com</td>
+                        <td>✅ Compliant</td>
+                    </tr>
+                    <tr>
+                        <td>Product Recommendation Engine</td>
+                        <td>E-commerce</td>
+                        <td><span class="badge badge-minimal">MINIMAL</span></td>
+                        <td>product@example.com</td>
+                        <td>✅ Compliant</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>ISO 42001 Gap Analysis</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clause</th>
+                        <th>Requirement</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>5.1 Governance</td>
+                        <td>AI governance framework established</td>
+                        <td>✅ Complete</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td>6.1 Risk Management</td>
+                        <td>AI risk assessment methodology</td>
+                        <td>⚠️ Partial</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td>7.2 Competence</td>
+                        <td>AI literacy training program</td>
+                        <td>⚠️ In Progress</td>
+                        <td>Medium</td>
+                    </tr>
+                    <tr>
+                        <td>8.3 Design & Development</td>
+                        <td>Technical documentation standards</td>
+                        <td>❌ Not Started</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td>9.1 Monitoring</td>
+                        <td>Continuous monitoring & logging</td>
+                        <td>✅ Complete</td>
+                        <td>High</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Recommended Actions</h2>
+            <ul style="line-height: 2;">
+                <li><strong>Immediate:</strong> Complete technical documentation for HR Candidate Screening system (High-Risk)</li>
+                <li><strong>This Month:</strong> Finalize AI risk assessment methodology for all high-risk systems</li>
+                <li><strong>This Quarter:</strong> Deploy AI literacy training to all staff handling AI systems</li>
+                <li><strong>Ongoing:</strong> Maintain evidence repository and conduct quarterly compliance reviews</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>This report is generated by AIMS Readiness platform for ISO/IEC 42001 and EU AI Act compliance tracking.</p>
+            <p>⚠️ This is not a certification. Compliance outcomes depend on operational controls and external audits.</p>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,160 @@
+{
+  "info": {
+    "name": "AIMS Readiness API",
+    "description": "ISO/IEC 42001 + EU AI Act compliance platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "dev-aims-demo-key",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "List AI Systems",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/systems",
+          "host": ["{{baseUrl}}"],
+          "path": ["systems"]
+        }
+      }
+    },
+    {
+      "name": "Create AI System",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Customer Support Chatbot\",\n  \"purpose\": \"Automated customer support\",\n  \"domain\": \"Customer Service\",\n  \"owner_email\": \"support@example.com\",\n  \"uses_biometrics\": false,\n  \"is_general_purpose_ai\": false,\n  \"impacts_fundamental_rights\": false,\n  \"personal_data_processed\": true,\n  \"deployment_context\": \"internal\",\n  \"criticality\": \"medium\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/systems",
+          "host": ["{{baseUrl}}"],
+          "path": ["systems"]
+        }
+      }
+    },
+    {
+      "name": "Import Systems (CSV)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "/path/to/systems.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/systems/import",
+          "host": ["{{baseUrl}}"],
+          "path": ["systems", "import"]
+        }
+      }
+    },
+    {
+      "name": "Assess AI System",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/systems/1/assess",
+          "host": ["{{baseUrl}}"],
+          "path": ["systems", "1", "assess"]
+        }
+      }
+    },
+    {
+      "name": "Upload Evidence",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "/path/to/evidence.pdf"
+            },
+            {
+              "key": "label",
+              "value": "Risk Assessment Report",
+              "type": "text"
+            },
+            {
+              "key": "iso42001_clause",
+              "value": "ISO42001:6.1 Risk Management",
+              "type": "text"
+            },
+            {
+              "key": "uploaded_by",
+              "value": "analyst@example.com",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/evidence/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["evidence", "1"]
+        }
+      }
+    },
+    {
+      "name": "Get Report Summary",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/reports/summary",
+          "host": ["{{baseUrl}}"],
+          "path": ["reports", "summary"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}
+

@@ -1,0 +1,7 @@
+iso_clause,ai_act_requirements,responsible,accountable,consulted,informed,status,due_date,notes
+ISO42001:5.1 Governance,AIAct:Accountability;AIAct:Transparency,Compliance Officer,Chief AI Officer,Legal Team,Executive Board,in_progress,2025-12-31,Governance framework setup
+ISO42001:6.1 Risk Management,AIAct:RiskMgmt;AIAct:PostMarketMonitoring,Risk Manager,Chief AI Officer,Data Science Team,Audit Committee,not_started,2025-12-31,Risk assessment methodology
+ISO42001:7.2 Competence,AIAct:AI_Literacy,HR Manager,Chief AI Officer,Training Team,All Staff,in_progress,2025-06-30,AI literacy training program
+ISO42001:8.3 Design & Dev,AIAct:DataGovernance;AIAct:TechnicalDocumentation,Lead Engineer,CTO,Data Team,Product Team,not_started,2025-12-31,Technical documentation standards
+ISO42001:9.1 Monitoring,AIAct:Logging;AIAct:RecordKeeping,Operations Manager,Chief AI Officer,Security Team,Compliance Officer,not_started,2025-12-31,Monitoring and logging infrastructure
+

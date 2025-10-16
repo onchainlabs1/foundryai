@@ -1,0 +1,6 @@
+system_id,label,iso42001_clause,control_name,file_path,version,uploaded_by,upload_date,status,reviewer_email,link_or_location
+1,Risk Assessment Report,ISO42001:6.1 Risk Management,Risk Analysis,/evidence/risk_assessment_v1.pdf,1.0,analyst@example.com,2025-01-15,approved,reviewer@example.com,SharePoint/Compliance/2025
+1,Training Records,ISO42001:7.2 Competence,AI Literacy Training,/evidence/training_completion.xlsx,1.0,hr@example.com,2025-02-01,pending,reviewer@example.com,LMS System
+2,Technical Specification,ISO42001:8.3 Design & Dev,System Design,/evidence/tech_spec_v2.pdf,2.0,engineer@example.com,2025-02-10,approved,reviewer@example.com,Confluence/Documentation
+2,Audit Logs,ISO42001:9.1 Monitoring,System Logging,/evidence/audit_logs_q1.zip,1.0,ops@example.com,2025-03-31,approved,reviewer@example.com,S3 Bucket/Logs/2025
+

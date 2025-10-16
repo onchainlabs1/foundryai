@@ -1,0 +1,5 @@
+name,purpose,domain,owner_email,uses_biometrics,is_general_purpose_ai,impacts_fundamental_rights,personal_data_processed,training_data_sensitivity,output_type,deployment_context,criticality,notes
+Customer Support Chatbot,Automated customer support responses,Customer Service,support@example.com,false,false,false,true,low,text,internal,medium,Handles Tier 1 support queries
+Facial Recognition System,Employee access control,Security,security@example.com,true,false,false,true,high,classification,public,high,Deployed at main entrance
+Risk Assessment Engine,Credit risk evaluation,Finance,risk@example.com,false,false,true,true,high,score,internal,high,Used for loan approvals
+
