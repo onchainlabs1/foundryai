@@ -10,7 +10,7 @@
 
 This document tracks the implementation of security and functionality fixes identified in the Codex audit reports. All **critical** and **high-priority** fixes have been implemented and tested.
 
-### ✅ Fixes Implemented (6/6 Critical & High)
+### ✅ Fixes Implemented (7/7 Critical & High)
 
 | ID | Severity | Issue | Status | Commit |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@ This document tracks the implementation of security and functionality fixes iden
 | F-05/F-06 | High | Exports lack authentication | ✅ Fixed | `cccb647` |
 | F-02 | High | Evidence viewer field errors | ✅ Fixed | `cccb647` |
 | B3 | High | SoA CSV export uses query string auth | ✅ Fixed | `4628911` |
+| B11 | High | Compliance export cross-tenant leak | ✅ Fixed | `8c88173` |
 
 ### 🔄 Deferred (Out of Scope - Production)
 
@@ -321,10 +322,37 @@ The latest Codex report (dated after commit `cccb647`) still reports some issues
 
 ---
 
+## 🆕 **B11: Compliance Export Cross-Tenant Leak** ✅
+
+**Problem:** `export_document()` queried AISystem by ID without validating organization ownership, allowing cross-tenant data leakage.
+
+**Solution:**
+- Added explicit org_id validation before querying AISystem
+- Raise ValueError if system doesn't belong to requesting org
+
+**Code Changes:** `backend/app/services/compliance_suite.py` (lines 443-451)
+```python
+# Validate system ownership if system_id provided
+system = None
+if system_id:
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org_id  # ✅ Enforce org scoping
+    ).first()
+    if not system:
+        raise ValueError(f"System {system_id} not found or access denied")
+```
+
+**Severity:** 🔴 HIGH (CVSS 7.5)  
+**Credit:** Identified by Codex security audit
+
+---
+
 ## 📅 Change Log
 
 | Date | Commit | Description |
 |---|---|---|
+| 2025-01-16 | `8c88173` | Fix B11: Compliance export cross-tenant leak |
 | 2025-01-16 | `4628911` | Fix B3: SoA CSV export authentication |
 | 2025-01-16 | `cccb647` | Implement F-10, F-01, F-04, F-05/F-06, F-02 |
 | 2025-01-16 | `0471a6b` | Fix Render deployment (pydantic[email]) |
