@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { api } from '@/lib/api'
+import { api, downloadFile } from '@/lib/api'
 import { IncidentsTable } from '@/components/incidents-modal'
 import ComplianceSuite from '@/components/compliance-suite'
 
@@ -95,8 +95,13 @@ export default function ReportsPage() {
               variant="outline" 
               className="w-full" 
               size="sm"
-              onClick={() => {
-                window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002'}/reports/deck.pptx`, '_blank')
+              onClick={async () => {
+                try {
+                  await downloadFile('/reports/deck.pptx', 'executive-deck.pptx');
+                } catch (error) {
+                  console.error('Download failed:', error);
+                  alert('Download failed. Please check your API key.');
+                }
               }}
             >
               Executive Deck (.pptx)
@@ -105,8 +110,13 @@ export default function ReportsPage() {
               variant="outline" 
               className="w-full" 
               size="sm"
-              onClick={() => {
-                window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002'}/reports/annex-iv.zip?system_id=1`, '_blank')
+              onClick={async () => {
+                try {
+                  await downloadFile('/reports/annex-iv.zip?system_id=1', 'annex-iv.zip');
+                } catch (error) {
+                  console.error('Download failed:', error);
+                  alert('Download failed. Please check your API key.');
+                }
               }}
             >
               Annex IV Package (.zip)

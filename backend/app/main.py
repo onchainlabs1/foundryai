@@ -17,6 +17,13 @@ from app.services.s3 import s3_service
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
+    # Validate critical configuration
+    if settings.SECRET_KEY == "change_me" or len(settings.SECRET_KEY) < 16:
+        raise ValueError(
+            "SECRET_KEY must be set and >= 16 chars. "
+            "Set via environment variable SECRET_KEY."
+        )
+    
     # Create tables (including artifact_text if missing)
     # Check if artifact_text exists, if not create all tables
     from sqlalchemy import inspect

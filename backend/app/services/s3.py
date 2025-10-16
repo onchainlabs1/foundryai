@@ -60,6 +60,31 @@ class S3Service:
             ExpiresIn=expires_in,
         )
 
+    def generate_presigned_get_url(
+        self, key: str, expires_in: int = 3600
+    ) -> str:
+        """
+        Generate presigned URL for GET download/viewing.
+
+        Args:
+            key: S3 object key
+            expires_in: URL expiration in seconds
+
+        Returns:
+            Presigned URL for GET download
+        """
+        if not self.client:
+            raise ValueError("S3 client not configured")
+
+        return self.client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": settings.S3_BUCKET,
+                "Key": key,
+            },
+            ExpiresIn=expires_in,
+        )
+
     def check_file_exists(self, key: str) -> bool:
         """Check if file exists in S3."""
         if not self.client:

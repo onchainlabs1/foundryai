@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { api } from '@/lib/api'
+import { api, downloadFile } from '@/lib/api'
 import { FRIAWizard } from '@/components/fria-wizard'
 import { ControlsTable } from '@/components/controls-table'
 import { IncidentsTable } from '@/components/incidents-modal'
@@ -188,18 +188,26 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
               <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline"
-                  onClick={() => {
-                    const apiKey = localStorage.getItem('apiKey')
-                    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002'}/reports/annex-iv.zip?system_id=${params.id}`, '_blank')
+                  onClick={async () => {
+                    try {
+                      await downloadFile(`/reports/annex-iv.zip?system_id=${params.id}`, 'annex-iv.zip');
+                    } catch (error) {
+                      console.error('Download failed:', error);
+                      alert('Download failed. Please check your API key.');
+                    }
                   }}
                 >
                   Export Annex IV (.zip)
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => {
-                    const apiKey = localStorage.getItem('apiKey')
-                    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002'}/reports/deck.pptx`, '_blank')
+                  onClick={async () => {
+                    try {
+                      await downloadFile('/reports/deck.pptx', 'executive-deck.pptx');
+                    } catch (error) {
+                      console.error('Download failed:', error);
+                      alert('Download failed. Please check your API key.');
+                    }
                   }}
                 >
                   Generate Executive Deck (.pptx)

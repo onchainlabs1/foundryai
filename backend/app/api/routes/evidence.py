@@ -48,7 +48,7 @@ def get_evidence_viewer_metadata(
         "pages_count": pages_count,
         "iso42001_clause": evidence.iso42001_clause,
         "control_name": evidence.control_name,
-        "created_at": evidence.created_at,
+        "created_at": evidence.upload_date,
         "url": f"/viewer?evidence_id={evidence_id}&page=1"
     }
 

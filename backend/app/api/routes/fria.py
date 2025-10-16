@@ -73,16 +73,30 @@ static_router = APIRouter(prefix="/fria", tags=["fria"])
 
 
 @static_router.get("/{fria_id}.md", response_class=PlainTextResponse)
-def download_fria_md(fria_id: int, db: Session = Depends(get_db)):
-    fria = db.query(FRIA).filter(FRIA.id == fria_id).first()
+def download_fria_md(
+    fria_id: int, 
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    fria = db.query(FRIA).filter(
+        FRIA.id == fria_id,
+        FRIA.org_id == org.id  # Ensure org scoping
+    ).first()
     if not fria:
         raise HTTPException(status_code=404, detail="FRIA not found")
     return PlainTextResponse(content=fria.summary_md or "")
 
 
 @static_router.get("/{fria_id}.html", response_class=HTMLResponse)
-def download_fria_html(fria_id: int, db: Session = Depends(get_db)):
-    fria = db.query(FRIA).filter(FRIA.id == fria_id).first()
+def download_fria_html(
+    fria_id: int, 
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    fria = db.query(FRIA).filter(
+        FRIA.id == fria_id,
+        FRIA.org_id == org.id  # Ensure org scoping
+    ).first()
     if not fria:
         raise HTTPException(status_code=404, detail="FRIA not found")
     html = generate_fria_html(fria.summary_md or "")

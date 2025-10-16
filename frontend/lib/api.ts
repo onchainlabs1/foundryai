@@ -172,3 +172,23 @@ export function clearApiKey() {
   }
 }
 
+export async function downloadFile(endpoint: string, filename: string) {
+  const apiKey = getApiKey();
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Download failed' }));
+    throw new Error(error.detail || 'Download failed');
+  }
+  
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+

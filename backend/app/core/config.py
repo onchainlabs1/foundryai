@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./aims.db"
     
     # Security
-    SECRET_KEY: str = "change_me"
+    SECRET_KEY: str  # Required: Set via environment variable
     FRONTEND_ORIGIN: str = "http://localhost:3001"
     
     # Organization seeding

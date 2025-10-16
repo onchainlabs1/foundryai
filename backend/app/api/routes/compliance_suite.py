@@ -151,9 +151,9 @@ def view_evidence_page(
     
     try:
         if settings.use_s3:
-            # Generate presigned URL for S3
+            # Generate presigned URL for S3 GET (viewing)
             s3_key = evidence.file_path
-            presigned_url = s3_service.generate_presigned_url(
+            presigned_url = s3_service.generate_presigned_get_url(
                 key=s3_key,
                 expires_in=settings.S3_URL_EXP_MIN * 60  # Convert minutes to seconds
             )
@@ -169,7 +169,7 @@ def view_evidence_page(
             "evidence_id": evidence_id,
             "page": page,
             "viewer_url": viewer_url,
-            "filename": evidence.filename,
+            "filename": evidence.label,  # Use label instead of non-existent filename
             "expires_in": settings.S3_URL_EXP_MIN * 60 if settings.use_s3 else None
         }
         
