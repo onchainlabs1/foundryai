@@ -8,7 +8,7 @@ import { api } from '@/lib/api'
 import { Database, ShieldAlert, Bot, Target, FileText, AlarmClock, Activity, TrendingUp, Info, Brain, Filter, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from 'recharts'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+// import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 export default function Dashboard() {
   const [summary, setSummary] = useState<any>(null)
@@ -75,8 +75,7 @@ export default function Dashboard() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-blue-950 dark:to-indigo-950 p-6 space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-blue-950 dark:to-indigo-950 p-6 space-y-8">
         {/* Header with Theme Toggle */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -127,14 +126,7 @@ export default function Dashboard() {
                     <div className="p-3 rounded-2xl bg-blue-500/20 backdrop-blur-xl">
                       <Database className="h-6 w-6 text-blue-600 dark:text-blue-400" aria-hidden="true" />
                     </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Total number of AI systems registered in your inventory</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Total number of AI systems registered in your inventory" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">Total AI Systems</CardTitle>
                   <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Registered in inventory</CardDescription>
@@ -179,14 +171,7 @@ export default function Dashboard() {
                     <div className="p-3 rounded-2xl bg-red-500/20 backdrop-blur-xl">
                       <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
                     </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Systems classified as high-risk under EU AI Act</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Systems classified as high-risk under EU AI Act" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">High-Risk Systems</CardTitle>
                   <CardDescription className="text-sm text-gray-600 dark:text-gray-400">EU AI Act classification</CardDescription>
@@ -231,14 +216,7 @@ export default function Dashboard() {
                     <div className="p-3 rounded-2xl bg-purple-500/20 backdrop-blur-xl">
                       <Bot className="h-6 w-6 text-purple-600 dark:text-purple-400" aria-hidden="true" />
                     </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>General Purpose AI systems requiring special attention</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="General Purpose AI systems requiring special attention" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">GPAI Systems</CardTitle>
                   <CardDescription className="text-sm text-gray-600 dark:text-gray-400">General Purpose AI</CardDescription>
@@ -285,23 +263,17 @@ export default function Dashboard() {
                   <div className="p-3 rounded-2xl bg-green-500/20 backdrop-blur-xl">
                     <Target className="h-6 w-6 text-green-600 dark:text-green-400" aria-hidden="true" />
                   </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowScoreModal(true)
-                        }}
-                        aria-label="Show score calculation details"
-                      >
-                        <Info className="h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Click to see detailed breakdown</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <button 
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowScoreModal(true)
+                    }}
+                    aria-label="Show score calculation details"
+                    title="Click to see detailed breakdown"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
                 </div>
                 <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">Compliance Score</CardTitle>
                 <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Overall readiness</CardDescription>
@@ -820,7 +792,6 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
       </div>
-    </TooltipProvider>
   )
 }
 
