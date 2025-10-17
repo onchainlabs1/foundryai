@@ -126,7 +126,7 @@ export default function Dashboard() {
                     <div className="p-3 rounded-2xl bg-blue-500/20 backdrop-blur-xl">
                       <Database className="h-6 w-6 text-blue-600 dark:text-blue-400" aria-hidden="true" />
                     </div>
-                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Total number of AI systems registered in your inventory" />
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">Total AI Systems</CardTitle>
                   <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">Registered in inventory</CardDescription>
@@ -171,7 +171,7 @@ export default function Dashboard() {
                     <div className="p-3 rounded-2xl bg-red-500/20 backdrop-blur-xl">
                       <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
                     </div>
-                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Systems classified as high-risk under EU AI Act" />
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">High-Risk Systems</CardTitle>
                   <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">EU AI Act classification</CardDescription>
@@ -216,7 +216,7 @@ export default function Dashboard() {
                     <div className="p-3 rounded-2xl bg-purple-500/20 backdrop-blur-xl">
                       <Bot className="h-6 w-6 text-purple-600 dark:text-purple-400" aria-hidden="true" />
                     </div>
-                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="General Purpose AI systems requiring special attention" />
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">GPAI Systems</CardTitle>
                   <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">General Purpose AI</CardDescription>
@@ -270,7 +270,6 @@ export default function Dashboard() {
                       setShowScoreModal(true)
                     }}
                     aria-label="Show score calculation details"
-                    title="Click to see detailed breakdown"
                   >
                     <Info className="h-4 w-4" />
                   </button>

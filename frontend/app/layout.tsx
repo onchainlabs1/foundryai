@@ -25,13 +25,14 @@ export default function RootLayout({
                 <Link href="/" className="text-xl font-bold">
                   AIMS Readiness
                 </Link>
-                <div className="flex gap-6">
-                  <Link href="/" className="hover:text-primary">Dashboard</Link>
-                  <Link href="/inventory" className="hover:text-primary">Inventory</Link>
-                  <Link href="/reports" className="hover:text-primary">Reports</Link>
-                  <Link href="/templates" className="hover:text-primary">Templates</Link>
-                  <Link href="/login" className="hover:text-primary">Login</Link>
-                </div>
+                            <div className="flex gap-6">
+                              <Link href="/" className="hover:text-primary">Dashboard</Link>
+                              <Link href="/inventory" className="hover:text-primary">Inventory</Link>
+                              <Link href="/reports" className="hover:text-primary">Reports</Link>
+                              <Link href="/templates" className="hover:text-primary">Templates</Link>
+                              <Link href="/onboarding" className="hover:text-primary">Onboarding</Link>
+                              <Link href="/login" className="hover:text-primary">Login</Link>
+                            </div>
               </div>
             </div>
           </nav>

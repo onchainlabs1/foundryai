@@ -158,6 +158,20 @@ export const api = {
         paragraphs,
       }),
     }),
+
+  // Templates
+  getTemplates: () => apiRequest('/templates'),
+  getTemplateContent: async (templateId: string) => {
+    const apiKey = getApiKey();
+    const response = await fetch(`${API_URL}/templates/${templateId}`, {
+      headers: apiKey ? { 'X-API-Key': apiKey } : {},
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to load template');
+    }
+    return response.text();
+  },
 };
 
 export function setApiKey(key: string) {

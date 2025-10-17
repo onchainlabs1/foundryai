@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Form
 from sqlalchemy.orm import Session
+import hashlib
+import os
+from pathlib import Path
 
 from app.core.security import verify_api_key
 from app.database import get_db
@@ -56,27 +59,55 @@ def get_evidence_viewer_metadata(
 @router.post("/{system_id}", response_model=EvidenceResponse)
 async def upload_evidence(
     system_id: int,
-    file: UploadFile = File(...),
-    label: str = None,
-    iso42001_clause: str = None,
-    control_name: str = None,
-    version: str = None,
-    uploaded_by: str = None,
+    file: UploadFile = File(None),
+    content: str = Form(None),
+    label: str = Form(None),
+    iso42001_clause: str = Form(None),
+    control_name: str = Form(None),
+    version: str = Form(None),
+    uploaded_by: str = Form(None),
     org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
-    """Upload evidence file for an AI system."""
+    """Upload evidence file or content for an AI system."""
     # Verify system exists and belongs to org
     system = db.query(AISystem).filter(AISystem.id == system_id, AISystem.org_id == org.id).first()
     if not system:
         raise HTTPException(status_code=404, detail="System not found")
 
-    # Default label to filename if not provided
-    if not label:
-        label = file.filename or "Uploaded Evidence"
-
-    # Save file and get checksum
-    file_path, checksum = await save_evidence_file(file, org.id, system_id)
+    # Handle either file upload or content
+    if file and file.filename:
+        # Traditional file upload
+        if not label:
+            label = file.filename or "Uploaded Evidence"
+        
+        # Save file and get checksum
+        file_path, checksum = await save_evidence_file(file, org.id, system_id)
+        
+    elif content:
+        # Markdown content upload
+        if not label:
+            label = "Generated Evidence"
+        
+        # Create markdown file
+        evidence_dir = Path(f"evidence/{org.id}/{system_id}")
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate filename with timestamp
+        import time
+        timestamp = int(time.time())
+        filename = f"evidence_{timestamp}.md"
+        file_path = evidence_dir / filename
+        
+        # Write content to file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        # Calculate checksum
+        checksum = hashlib.sha256(content.encode('utf-8')).hexdigest()
+        
+    else:
+        raise HTTPException(status_code=400, detail="Either file or content must be provided")
 
     # Create evidence record
     evidence = Evidence(
@@ -85,7 +116,7 @@ async def upload_evidence(
         label=label,
         iso42001_clause=iso42001_clause,
         control_name=control_name,
-        file_path=file_path,
+        file_path=str(file_path),
         version=version,
         checksum=checksum,
         uploaded_by=uploaded_by,
@@ -95,9 +126,9 @@ async def upload_evidence(
     db.commit()
     db.refresh(evidence)
     
-    # Ingest text from PDF (async background task in production)
+    # Ingest text from file (async background task in production)
     try:
-        ingest_evidence_text(db, evidence, file_path)
+        ingest_evidence_text(db, evidence, str(file_path))
     except Exception as e:
         # Log error but don't fail the upload
         print(f"Warning: Text extraction failed for evidence {evidence.id}: {e}")

@@ -47,8 +47,8 @@ export default function TemplatesPage() {
 
   const loadTemplates = async () => {
     try {
-      const response = await api.get('/templates')
-      setTemplates(response.data.templates || [])
+      const response = await api.getTemplates()
+      setTemplates(response.templates || [])
     } catch (error) {
       console.error('Failed to load templates:', error)
     } finally {
@@ -61,8 +61,8 @@ export default function TemplatesPage() {
     setPreviewLoading(true)
     
     try {
-      const response = await api.get(`/templates/${template.template_id}`)
-      setPreviewContent(response.data)
+      const content = await api.getTemplateContent(template.template_id)
+      setPreviewContent(content)
     } catch (error) {
       console.error('Failed to load template content:', error)
       setPreviewContent('Error loading template content.')
