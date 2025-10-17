@@ -87,7 +87,7 @@ export default function Dashboard() {
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               AIMS Readiness
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 font-medium">
               ISO/IEC 42001 + EU AI Act compliance overview
             </p>
           </div>
@@ -129,7 +129,7 @@ export default function Dashboard() {
                     <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Total number of AI systems registered in your inventory" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">Total AI Systems</CardTitle>
-                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Registered in inventory</CardDescription>
+                  <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">Registered in inventory</CardDescription>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <motion.div 
@@ -141,7 +141,7 @@ export default function Dashboard() {
                   >
                     {summary?.systems || 0}
                   </motion.div>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-300 font-medium">
                     <span>Click to view all systems</span>
                     <motion.span
                       animate={{ x: [0, 4, 0] }}
@@ -174,7 +174,7 @@ export default function Dashboard() {
                     <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Systems classified as high-risk under EU AI Act" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">High-Risk Systems</CardTitle>
-                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">EU AI Act classification</CardDescription>
+                  <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">EU AI Act classification</CardDescription>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <motion.div 
@@ -186,7 +186,7 @@ export default function Dashboard() {
                   >
                     {summary?.high_risk || 0}
                   </motion.div>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-300 font-medium">
                     <span>Click to view high-risk</span>
                     <motion.span
                       animate={{ x: [0, 4, 0] }}
@@ -219,7 +219,7 @@ export default function Dashboard() {
                     <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="General Purpose AI systems requiring special attention" />
                   </div>
                   <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">GPAI Systems</CardTitle>
-                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">General Purpose AI</CardDescription>
+                  <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">General Purpose AI</CardDescription>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <motion.div 
@@ -231,7 +231,7 @@ export default function Dashboard() {
                   >
                     {summary?.gpai_count || 0}
                   </motion.div>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-300 font-medium">
                     <span>Click to view GPAI</span>
                     <motion.span
                       animate={{ x: [0, 4, 0] }}
@@ -276,7 +276,7 @@ export default function Dashboard() {
                   </button>
                 </div>
                 <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 mt-2">Compliance Score</CardTitle>
-                <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Overall readiness</CardDescription>
+                <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">Overall readiness</CardDescription>
               </CardHeader>
               <CardContent className="relative z-10">
                 <motion.div 
@@ -288,7 +288,7 @@ export default function Dashboard() {
                 >
                   {score?.org_score ? `${Math.round(score.org_score * 100)}%` : 'N/A'}
                 </motion.div>
-                <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-300 font-medium">
                   <span>Click for detailed breakdown</span>
                   <motion.span
                     animate={{ x: [0, 4, 0] }}
@@ -302,61 +302,6 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Link href="/inventory?tab=evidence">
-          <Card className="rounded-2xl shadow-md bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-100/70 dark:border-gray-800 motion-safe:hover:shadow-lg transition-all duration-200 motion-safe:hover:scale-[1.01] cursor-pointer">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-                <CardTitle className="text-lg font-semibold">Evidence Coverage</CardTitle>
-              </div>
-              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">Controls with evidence</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl md:text-4xl font-bold text-blue-600" aria-label={`Evidence coverage ${score?.coverage_pct ? Math.round(score.coverage_pct * 100) : 'N/A'} percent`}>
-                {score?.coverage_pct ? `${Math.round(score.coverage_pct * 100)}%` : 'N/A'}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Click to manage evidence →</div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/inventory?tab=controls&filter=due">
-          <Card className="rounded-2xl shadow-md bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-100/70 dark:border-gray-800 motion-safe:hover:shadow-lg transition-all duration-200 motion-safe:hover:scale-[1.01] cursor-pointer">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <AlarmClock className="h-5 w-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
-                <CardTitle className="text-lg font-semibold">Open Actions</CardTitle>
-              </div>
-              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">Due within 7 days</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl md:text-4xl font-bold text-orange-600" aria-label={`${summary?.open_actions_7d || 0} open actions`}>
-                {summary?.open_actions_7d || 0}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Click to view actions →</div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/reports?tab=incidents">
-          <Card className="rounded-2xl shadow-md bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-100/70 dark:border-gray-800 motion-safe:hover:shadow-lg transition-all duration-200 motion-safe:hover:scale-[1.01] cursor-pointer">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <Activity className="h-5 w-5 text-yellow-600 dark:text-yellow-400" aria-hidden="true" />
-                <CardTitle className="text-lg font-semibold">Recent Incidents</CardTitle>
-              </div>
-              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">Last 30 days</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl md:text-4xl font-bold text-yellow-600" aria-label={`${summary?.last_30d_incidents || 0} recent incidents`}>
-                {summary?.last_30d_incidents || 0}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Click to view incidents →</div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
 
         {/* AI Insights Section */}
         <motion.div
@@ -376,7 +321,7 @@ export default function Dashboard() {
                     </div>
                     <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200">Evidence Coverage</CardTitle>
                   </div>
-                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Controls with evidence</CardDescription>
+                  <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">Controls with evidence</CardDescription>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <motion.div 
@@ -388,7 +333,7 @@ export default function Dashboard() {
                   >
                     {score?.coverage_pct ? `${Math.round(score.coverage_pct * 100)}%` : 'N/A'}
                   </motion.div>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-300 font-medium">
                     <span>Click to manage evidence</span>
                     <motion.span
                       animate={{ x: [0, 4, 0] }}
@@ -413,7 +358,7 @@ export default function Dashboard() {
                     </div>
                     <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200">Open Actions</CardTitle>
                   </div>
-                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Due within 7 days</CardDescription>
+                  <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">Due within 7 days</CardDescription>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <motion.div 
@@ -425,7 +370,7 @@ export default function Dashboard() {
                   >
                     {summary?.open_actions_7d || 0}
                   </motion.div>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-300 font-medium">
                     <span>Click to view actions</span>
                     <motion.span
                       animate={{ x: [0, 4, 0] }}
@@ -450,7 +395,7 @@ export default function Dashboard() {
                     </div>
                     <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200">Recent Incidents</CardTitle>
                   </div>
-                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Last 30 days</CardDescription>
+                  <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">Last 30 days</CardDescription>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <motion.div 
@@ -462,7 +407,7 @@ export default function Dashboard() {
                   >
                     {summary?.last_30d_incidents || 0}
                   </motion.div>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-300 font-medium">
                     <span>Click to view incidents</span>
                     <motion.span
                       animate={{ x: [0, 4, 0] }}
@@ -492,7 +437,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-200">Readiness Trend</CardTitle>
-                    <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Compliance progress over time</CardDescription>
+                    <CardDescription className="text-sm text-gray-700 dark:text-gray-300 font-medium">Compliance progress over time</CardDescription>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
