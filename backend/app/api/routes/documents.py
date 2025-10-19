@@ -203,7 +203,7 @@ async def preview_document(
     
     try:
         generator = DocumentGenerator()
-        content = generator.get_document_content(
+        content, actual_format = generator.get_document_content(
             system_id=system_id,
             org_id=org.id,
             doc_type=doc_type,

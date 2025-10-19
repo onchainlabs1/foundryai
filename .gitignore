@@ -486,6 +486,7 @@ backend/.env
 backend/uploads/
 backend/exports/
 backend/temp/
+backend/generated_documents/
 
 # Frontend specific
 frontend/.next/
