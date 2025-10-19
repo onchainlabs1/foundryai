@@ -500,6 +500,9 @@ frontend/.env.production.local
 docs/_build/
 docs/build/
 
+# Generated data files
+data/
+
 # Test artifacts
 test-results/
 coverage/
