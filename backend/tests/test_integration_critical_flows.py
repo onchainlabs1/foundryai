@@ -7,11 +7,38 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
 from app.main import app
-from app.database import get_db
+from app.database import get_db, engine, Base
 from app.models import Organization, AISystem, Action
+
+# Create test database tables
+Base.metadata.create_all(bind=engine)
 
 client = TestClient(app)
 HEADERS = {"X-API-Key": "dev-aims-demo-key"}
+
+
+@pytest.fixture(autouse=True)
+def setup_test_org():
+    """Automatically create the demo organization for each test."""
+    from app.database import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        # Check if demo org already exists
+        demo_org = db.query(Organization).filter(
+            Organization.api_key == "dev-aims-demo-key"
+        ).first()
+
+        if not demo_org:
+            demo_org = Organization(
+                name="AIMS Demo Corporation",
+                api_key="dev-aims-demo-key"
+            )
+            db.add(demo_org)
+            db.commit()
+            db.refresh(demo_org)
+    finally:
+        db.close()
 
 
 def test_onboarding_to_documents_flow():
@@ -64,7 +91,15 @@ def test_onboarding_to_documents_flow():
         doc_type = documents[0]["type"]
         response = client.get(f"/documents/systems/{system_id}/download/{doc_type}?format=pdf", headers=HEADERS)
         assert response.status_code == 200
-        assert response.headers["content-type"] == "application/pdf"
+        
+        # Check if PDF is available or if fallback to markdown occurred
+        if "X-PDF-Fallback" in response.headers:
+            # WeasyPrint not available, should return markdown
+            assert response.headers["content-type"] == "text/markdown; charset=utf-8"
+            assert "WeasyPrint not available" in response.headers["X-PDF-Fallback"]
+        else:
+            # WeasyPrint available, should return PDF
+            assert response.headers["content-type"] == "application/pdf"
 
 
 def test_annex_iv_export_integrity():
@@ -232,6 +267,52 @@ def test_no_localstorage_dependency():
         # If it fails, it should be a clear error, not a localStorage fallback
         error_detail = response.json().get("detail", "")
         assert "localStorage" not in error_detail.lower()
+
+
+def test_pdf_fallback_behavior():
+    """Test PDF fallback to markdown when WeasyPrint is not available."""
+    # Create a system and generate documents
+    system_data = {
+        "name": "Fallback Test System",
+        "purpose": "Testing PDF fallback",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Generate documents
+    onboarding_data = {
+        "company": {"name": "Test Company"},
+        "systems": [system_data],
+        "risks": [{"type": "bias", "description": "Test risk"}],
+        "oversight": {"human_in_loop": True},
+        "monitoring": {"continuous": True}
+    }
+    
+    response = client.post(f"/documents/systems/{system_id}/generate",
+                          json=onboarding_data, headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Test PDF download - should work regardless of WeasyPrint availability
+    response = client.get(f"/documents/systems/{system_id}/download/risk_assessment?format=pdf", headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Check response based on WeasyPrint availability
+    if "X-PDF-Fallback" in response.headers:
+        # WeasyPrint not available, should return markdown
+        assert response.headers["content-type"] == "text/markdown; charset=utf-8"
+        assert "WeasyPrint not available" in response.headers["X-PDF-Fallback"]
+        # Content should be markdown
+        content = response.content.decode('utf-8')
+        assert "Risk Management Plan" in content or "Risk Assessment" in content
+    else:
+        # WeasyPrint available, should return PDF
+        assert response.headers["content-type"] == "application/pdf"
+        # Content should be binary PDF
+        assert response.content.startswith(b'%PDF')
 
 
 if __name__ == "__main__":

@@ -21,6 +21,9 @@ except (ImportError, OSError) as e:
     WEASYPRINT_AVAILABLE = False
     print(f"Warning: WeasyPrint not available ({e}). PDF generation will be disabled.")
 
+# For testing fallback behavior, uncomment the line below:
+# WEASYPRINT_AVAILABLE = False
+
 from app.database import get_db
 from app.models import AISystem, Organization, Evidence
 
@@ -333,8 +336,11 @@ class DocumentGenerator:
             file_path = system_dir / f"{doc_type}.md"
         elif format == "pdf":
             if not WEASYPRINT_AVAILABLE:
-                raise RuntimeError("PDF generation is not available. WeasyPrint is not installed.")
-            file_path = system_dir / f"{doc_type}.pdf"
+                # Fallback to markdown if PDF is not available
+                file_path = system_dir / f"{doc_type}.md"
+                format = "markdown"  # Override format for consistent response
+            else:
+                file_path = system_dir / f"{doc_type}.pdf"
         else:
             raise ValueError(f"Unsupported format: {format}")
         
@@ -342,4 +348,7 @@ class DocumentGenerator:
             raise FileNotFoundError(f"Document {doc_type} not found for system {system_id}")
         
         with open(file_path, 'rb') as f:
-            return f.read()
+            content = f.read()
+        
+        # Return content with format info for the endpoint to handle
+        return content, format

@@ -146,15 +146,15 @@ async def download_document(
     
     try:
         generator = DocumentGenerator()
-        content = generator.get_document_content(
+        content, actual_format = generator.get_document_content(
             system_id=system_id,
             org_id=org.id,
             doc_type=doc_type,
             format=format
         )
         
-        # Determine content type and file extension
-        if format == "markdown":
+        # Determine content type and file extension based on actual format returned
+        if actual_format == "markdown":
             media_type = "text/markdown"
             file_extension = "md"
         else:  # pdf
@@ -164,10 +164,17 @@ async def download_document(
         # Set filename
         filename = f"{doc_type}_{system.name.replace(' ', '_')}.{file_extension}"
         
+        # Prepare headers
+        headers = {"Content-Disposition": f"attachment; filename={filename}"}
+        
+        # Add fallback indicator if PDF was requested but markdown was returned
+        if format == "pdf" and actual_format == "markdown":
+            headers["X-PDF-Fallback"] = "WeasyPrint not available, returning markdown"
+        
         return Response(
             content=content,
             media_type=media_type,
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers=headers
         )
         
     except FileNotFoundError:
