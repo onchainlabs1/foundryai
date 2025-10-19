@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, text
 
 from app.core.security import verify_api_key
 from app.database import get_db
@@ -8,9 +9,12 @@ from fastapi.responses import StreamingResponse, RedirectResponse
 from io import BytesIO
 import zipfile
 import hashlib
+import logging
 
 from app.models import AISystem, Organization, Control, Evidence, Incident, Action
 from app.schemas import ReportSummary, ScoreResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -71,35 +75,43 @@ async def get_summary(
                 )
                 evidence_count = evidence_result.scalar()
                 
-                # Count evidence with control_id (preferred approach)
-                evidence_with_id_result = db.execute(
-                    text("SELECT COUNT(*) FROM evidence WHERE org_id = :org_id AND control_id IS NOT NULL"), 
-                    {"org_id": org.id}
-                )
-                evidence_with_id_count = evidence_with_id_result.scalar()
-                
-                # Use the better approach if available
-                if evidence_with_id_count > 0:
-                    evidence_coverage_pct = (evidence_with_id_count / total_controls) * 100
-                    evidence_coverage_status = "calculated_with_id"
-                elif evidence_count > 0:
-                    evidence_coverage_pct = (evidence_count / total_controls) * 100
-                    evidence_coverage_status = "calculated_legacy"
-                else:
-                    evidence_coverage_pct = 0.0
-                    evidence_coverage_status = "no_evidence"
+                # Try to count evidence with control_id (if column exists)
+                try:
+                    evidence_with_id_result = db.execute(
+                        text("SELECT COUNT(*) FROM evidence WHERE org_id = :org_id AND control_id IS NOT NULL"), 
+                        {"org_id": org.id}
+                    )
+                    evidence_with_id_count = evidence_with_id_result.scalar()
+                    
+                    if evidence_with_id_count > 0:
+                        evidence_coverage_pct = (evidence_with_id_count / total_controls) * 100
+                        evidence_coverage_status = "calculated_with_id"
+                    elif evidence_count > 0:
+                        evidence_coverage_pct = (evidence_count / total_controls) * 100
+                        evidence_coverage_status = "calculated_legacy"
+                    else:
+                        evidence_coverage_pct = 0.0
+                        evidence_coverage_status = "no_evidence"
+                except Exception:
+                    # control_id column doesn't exist yet, fallback to control_name
+                    if evidence_count > 0:
+                        evidence_coverage_pct = (evidence_count / total_controls) * 100
+                        evidence_coverage_status = "calculated_legacy"
+                    else:
+                        evidence_coverage_pct = 0.0
+                        evidence_coverage_status = "no_evidence"
             else:
                 evidence_coverage_status = "no_controls"
-                print("INFO: No controls found for organization - evidence coverage set to 0%")
+                logger.info("No controls found for organization - evidence coverage set to 0%%")
         except Exception as e:
             evidence_coverage_status = "error"
-            print(f"ERROR: Could not calculate evidence coverage: {e}")
+            logger.error(f"Could not calculate evidence coverage: {e}")
             evidence_coverage_pct = 0.0
         
         # Calculate real metrics - consider both criticality and ai_act_class
         high_risk_systems = db.query(AISystem).filter(
             AISystem.org_id == org.id,
-            db.or_(
+            or_(
                 AISystem.criticality == 'high',
                 AISystem.ai_act_class == 'high-risk'
             )
@@ -137,9 +149,7 @@ async def get_summary(
             "open_actions_7d": open_actions_7d,
         }
     except Exception as e:
-        print(f"ERROR in get_summary: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"ERROR in get_summary: {e}", exc_info=True)
         # Return safe defaults
         return {
             "systems": 0,
@@ -313,12 +323,16 @@ async def get_upcoming_deadlines(
 
 
 @router.get("/annex-iv/{system_id}")
+@router.get("/export/annex-iv.zip")  # Alias with .zip extension
 async def get_annex_iv_zip(
-    system_id: int,
+    system_id: int = None,
     org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Generate Annex IV zip file for a system."""
+    if not system_id:
+        raise HTTPException(status_code=400, detail="system_id is required")
+    
     system = (
         db.query(AISystem)
         .filter(AISystem.id == system_id, AISystem.org_id == org.id)

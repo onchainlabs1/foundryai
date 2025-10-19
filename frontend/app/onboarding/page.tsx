@@ -295,18 +295,7 @@ export default function OnboardingPage() {
         systems: syncedSystems
       }))
       
-      // Save onboarding data to localStorage for document generation
-      const onboardingData = {
-        company: data.company,
-        systems: syncedSystems,
-        risks: data.risks,
-        oversight: data.oversight,
-        monitoring: data.monitoring,
-        evidence: data.evidence,
-        controls: data.controls
-      }
-      
-      localStorage.setItem('onboardingData', JSON.stringify(onboardingData))
+      // Onboarding data is now stored in backend - no localStorage needed
       
       // Save onboarding data to backend for each system
       for (const system of syncedSystems) {

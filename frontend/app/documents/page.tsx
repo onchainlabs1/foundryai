@@ -120,19 +120,7 @@ export default function DocumentsPage() {
         dataSource = 'none'
       }
       
-      // If no backend data, check localStorage as fallback
-      if (!onboardingData) {
-        try {
-          const localData = localStorage.getItem('onboardingData')
-          onboardingData = localData ? JSON.parse(localData) : null
-          if (onboardingData) {
-            dataSource = 'localStorage'
-            console.warn('Using localStorage data as fallback - this may be incomplete')
-          }
-        } catch (err) {
-          console.warn('Could not parse localStorage data:', err)
-        }
-      }
+      // No localStorage fallback - only use backend data
       
       // If still no data, block generation with clear error message
       if (!onboardingData) {
@@ -146,17 +134,7 @@ export default function DocumentsPage() {
         return
       }
       
-      // Show warning if using localStorage fallback
-      if (dataSource === 'localStorage') {
-        const warningMsg = '⚠️ Warning: Using incomplete data from browser storage. Documents may be missing critical information. For complete and accurate compliance documents, please complete the onboarding process.'
-        setError(warningMsg)
-        toast({
-          title: "Using Incomplete Data",
-          description: "Documents generated from browser storage may be incomplete. Complete onboarding for accurate documents.",
-          variant: "destructive",
-        })
-        // Continue with generation but show warning
-      }
+      // Data source validation - only backend data is trusted
       
       const response = await api.generateSystemDocuments(systemId, onboardingData)
       
