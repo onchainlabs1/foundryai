@@ -14,7 +14,7 @@ from app.schemas import ControlBulkRequest
 router = APIRouter(tags=["controls"])
 
 
-@router.post("/controls/bulk")
+@router.post("/bulk")
 def bulk_upsert_controls(
     payload: ControlBulkRequest,
     org: Organization = Depends(verify_api_key),
@@ -64,36 +64,6 @@ def bulk_upsert_controls(
     return {"upserted": upserted}
 
 
-@router.get("/systems/{system_id}/controls")
-def list_controls(
-    system_id: int,
-    org: Organization = Depends(verify_api_key),
-    db: Session = Depends(get_db),
-):
-    items = (
-        db.query(Control)
-        .filter(Control.system_id == system_id, Control.org_id == org.id)
-        .order_by(Control.iso_clause)
-        .all()
-    )
-    return items
-
-
-@router.get("/systems/{system_id}/soa.csv")
-def export_soa_csv(system_id: int, org: Organization = Depends(verify_api_key), db: Session = Depends(get_db)):
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["iso_clause", "applicable", "justification"])
-    # MVP: applicable if there is at least one control mapped to clause; justification from rationale
-    items = (
-        db.query(Control)
-        .filter(Control.system_id == system_id, Control.org_id == org.id)
-        .order_by(Control.iso_clause)
-        .all()
-    )
-    for c in items:
-        writer.writerow([c.iso_clause or "", True, c.rationale or ""])
-    return Response(content=output.getvalue(), media_type="text/csv")
 
 
 def compute_evidence_coverage_pct(db: Session, org_id: int, system_id: int) -> float:

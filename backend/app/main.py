@@ -6,7 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import evidence, reports, systems, fria, controls, incidents, compliance_suite, debug, templates
+from app.api.routes import evidence, reports, systems, fria, controls, incidents, compliance_suite, debug, templates, documents
 from app.core.config import settings
 from app.core.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from app.database import Base, SessionLocal, engine
@@ -104,11 +104,12 @@ app.include_router(evidence.router)
 app.include_router(reports.router)
 app.include_router(fria.router)
 app.include_router(fria.static_router)
-app.include_router(controls.router)
+app.include_router(controls.router, prefix="/controls")
 app.include_router(incidents.router)
 app.include_router(compliance_suite.router)
 app.include_router(debug.router)
 app.include_router(templates.router)
+app.include_router(documents.router)
 
 
 @app.exception_handler(RequestValidationError)

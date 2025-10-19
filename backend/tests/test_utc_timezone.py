@@ -43,8 +43,8 @@ class TestUTCTimezone:
             db.rollback()
             db.close()
     
-    def test_ai_system_updated_at_is_utc(self):
-        """Test that AISystem.updated_at is timezone-aware UTC."""
+    def test_ai_system_created_successfully(self):
+        """Test that AISystem can be created (it doesn't have timestamp fields)."""
         db = SessionLocal()
         try:
             # Create organization first
@@ -63,9 +63,9 @@ class TestUTCTimezone:
             db.commit()
             db.refresh(system)
             
-            # Check that updated_at is timezone-aware and UTC
-            assert system.updated_at.tzinfo is not None
-            assert system.updated_at.tzinfo == timezone.utc
+            # Check that system was created successfully
+            assert system.id is not None
+            assert system.name == "Test System"
             
         finally:
             db.rollback()
@@ -76,7 +76,8 @@ class TestUTCTimezone:
         db = SessionLocal()
         try:
             # Create organization and system
-            org = Organization(name="Test Org", api_key="test-key-utc")
+            unique_key = f"test-key-utc-{uuid.uuid4().hex[:8]}"
+            org = Organization(name="Test Org", api_key=unique_key)
             db.add(org)
             db.commit()
             
@@ -113,7 +114,8 @@ class TestUTCTimezone:
         db = SessionLocal()
         try:
             # Create organization and system
-            org = Organization(name="Test Org", api_key="test-key-utc")
+            unique_key = f"test-key-utc-{uuid.uuid4().hex[:8]}"
+            org = Organization(name="Test Org", api_key=unique_key)
             db.add(org)
             db.commit()
             
@@ -149,7 +151,8 @@ class TestUTCTimezone:
         db = SessionLocal()
         try:
             # Create organization and system
-            org = Organization(name="Test Org", api_key="test-key-utc")
+            unique_key = f"test-key-utc-{uuid.uuid4().hex[:8]}"
+            org = Organization(name="Test Org", api_key=unique_key)
             db.add(org)
             db.commit()
             

@@ -2,19 +2,25 @@
 template_id: risk_assessment_v1
 iso_clauses: ["6.1","Annex C"]
 ai_act: ["Annex IV §6"]
-version: "1.0.0"
+version: "{{ version }}"
 language: "en"
-generated_at: "2025-10-17T08:42:56Z"
+generated_at: "{{ generated_at }}"
 ---
 
-# Risk Management Plan  
+# Risk Management Plan — {{ system.name }}
 *Based on ISO/IEC 42001 clause 6.1 and Annex C.*
 
+**Organization:** {{ company_name }}  
+**System:** {{ system.name }}  
+**Domain:** {{ system_domain }}  
+**AI Act Classification:** {{ ai_act_classification }}  
+**Generated:** {{ generated_at }}
+
 ## 1. Purpose  
-Identify, analyse, evaluate and treat risks related to AI systems.
+Identify, analyse, evaluate and treat risks related to AI systems operated by {{ company_name }}.
 
 ## 2. Scope  
-All AI systems operated by the organisation, including pilots and third‑party models.
+All AI systems operated by {{ company_name }}, including the {{ system.name }} system, pilots and third‑party models.
 
 ## 3. Methodology  
 - ISO 31000 principles (Identify → Analyse → Evaluate → Treat → Monitor).  

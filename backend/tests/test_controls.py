@@ -13,10 +13,21 @@ HEADERS = {"X-API-Key": API_KEY}
 
 def test_bulk_upsert_controls():
     """Test bulk upserting controls."""
+    # First, create a system
+    system_payload = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "minimal"
+    }
+    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
+    assert system_response.status_code == 200
+    system_id = system_response.json()["id"]
+    
     payload = {
         "controls": [
             {
-                "system_id": 1,
+                "system_id": system_id,
                 "iso_clause": "ISO42001:6.1",
                 "name": "Risk Management Process",
                 "priority": "high",
@@ -25,7 +36,7 @@ def test_bulk_upsert_controls():
                 "rationale": "Critical control"
             },
             {
-                "system_id": 1,
+                "system_id": system_id,
                 "iso_clause": "ISO42001:7.2",
                 "name": "Human Oversight",
                 "priority": "medium",
@@ -42,7 +53,18 @@ def test_bulk_upsert_controls():
 
 def test_list_system_controls():
     """Test listing controls for a system."""
-    response = client.get("/systems/1/controls", headers=HEADERS)
+    # First, create a system
+    system_payload = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "minimal"
+    }
+    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
+    assert system_response.status_code == 200
+    system_id = system_response.json()["id"]
+    
+    response = client.get(f"/systems/{system_id}/controls", headers=HEADERS)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -50,7 +72,18 @@ def test_list_system_controls():
 
 def test_export_soa_csv():
     """Test exporting SoA as CSV."""
-    response = client.get("/systems/1/soa.csv", headers=HEADERS)
+    # First, create a system
+    system_payload = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "minimal"
+    }
+    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
+    assert system_response.status_code == 200
+    system_id = system_response.json()["id"]
+    
+    response = client.get(f"/systems/{system_id}/soa.csv", headers=HEADERS)
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
     content = response.text

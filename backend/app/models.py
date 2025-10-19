@@ -12,7 +12,7 @@ class Organization(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     api_key = Column(String(255), unique=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     systems = relationship("AISystem", back_populates="organization")
     evidence = relationship("Evidence", back_populates="organization")
@@ -48,9 +48,10 @@ class Evidence(Base):
     id = Column(Integer, primary_key=True, index=True)
     org_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
     system_id = Column(Integer, ForeignKey("ai_systems.id"), nullable=True)
+    control_id = Column(Integer, ForeignKey("controls.id"), nullable=True)  # New field
     label = Column(String(255), nullable=False)
     iso42001_clause = Column(String(100))
-    control_name = Column(String(255))
+    control_name = Column(String(255))  # Keep for backward compatibility
     file_path = Column(String(500))
     version = Column(String(50))
     checksum = Column(String(64))
@@ -62,6 +63,7 @@ class Evidence(Base):
 
     organization = relationship("Organization", back_populates="evidence")
     system = relationship("AISystem", back_populates="evidence")
+    control = relationship("Control")  # New relationship
 
 
 # --- New additive models (do not modify existing ones) ---
@@ -153,9 +155,48 @@ class ArtifactText(Base):
     )
 
 
+class Action(Base):
+    """Action items for compliance tracking."""
+    __tablename__ = "actions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
+    system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=True)
+    control_id = Column(Integer, ForeignKey("controls.id"), index=True, nullable=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    status = Column(String(20), default="open")  # open|in_progress|completed|cancelled
+    priority = Column(String(20), default="medium")  # low|medium|high|critical
+    assigned_to = Column(String(255))
+    due_date = Column(Date, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    organization = relationship("Organization")
+    ai_system = relationship("AISystem")
+    control = relationship("Control")
+
+
 # Helpful composite indexes
 Index("ix_fria_org_system", FRIA.org_id, FRIA.system_id)
 Index("ix_controls_org_system", Control.org_id, Control.system_id)
 Index("ix_soa_org_system", SoAItem.org_id, SoAItem.system_id)
 Index("ix_incidents_org_system", Incident.org_id, Incident.system_id)
+
+
+class OnboardingData(Base):
+    """Store onboarding data for document generation"""
+    __tablename__ = "onboarding_data"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
+    system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
+    data_json = Column(Text, nullable=False)  # JSON string with onboarding data
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    organization = relationship("Organization")
+    system = relationship("AISystem")
 

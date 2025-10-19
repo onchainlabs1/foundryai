@@ -1,13 +1,14 @@
 import csv
 import io
 from typing import List
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Response
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import AISystem, Organization
+from app.models import AISystem, Organization, Control
 from app.schemas import AISystemCreate, AISystemResponse, AssessmentResponse
 from app.services.gap import generate_control_plan, generate_gap
 from app.services.risk import classify_ai_act, detect_role, is_gpai
@@ -23,6 +24,80 @@ async def list_systems(
     """List all AI systems for the organization."""
     systems = db.query(AISystem).filter(AISystem.org_id == org.id).all()
     return systems
+
+
+@router.get("/{system_id}", response_model=AISystemResponse)
+async def get_system(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Get a specific AI system by ID."""
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id, 
+        AISystem.org_id == org.id
+    ).first()
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    return system
+
+
+@router.patch("/{system_id}", response_model=AISystemResponse)
+async def patch_system(
+    system_id: int,
+    system_updates: dict,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Update specific fields of an existing AI system."""
+    existing_system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    
+    if not existing_system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    # Update only provided fields
+    allowed_fields = {
+        'name', 'purpose', 'domain', 'owner_email', 'uses_biometrics',
+        'is_general_purpose_ai', 'impacts_fundamental_rights', 'personal_data_processed',
+        'training_data_sensitivity', 'output_type', 'deployment_context',
+        'criticality', 'notes'
+    }
+    
+    for field, value in system_updates.items():
+        if field in allowed_fields and hasattr(existing_system, field):
+            setattr(existing_system, field, value)
+    
+    db.commit()
+    db.refresh(existing_system)
+    return existing_system
+
+
+@router.put("/{system_id}", response_model=AISystemResponse)
+async def update_system(
+    system_id: int,
+    system: AISystemCreate,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Update an existing AI system (full replacement)."""
+    existing_system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    
+    if not existing_system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    # Update fields
+    for field, value in system.dict(exclude_unset=True).items():
+        setattr(existing_system, field, value)
+    
+    db.commit()
+    db.refresh(existing_system)
+    return existing_system
 
 
 @router.post("", response_model=AISystemResponse)
@@ -128,4 +203,112 @@ async def assess_system(
         "gap": gap,
         "control_plan": control_plan,
     }
+
+
+@router.get("/{system_id}/controls")
+def list_controls(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    items = (
+        db.query(Control)
+        .filter(Control.system_id == system_id, Control.org_id == org.id)
+        .order_by(Control.iso_clause)
+        .all()
+    )
+    return items
+
+
+@router.post("/{system_id}/onboarding-data")
+async def save_onboarding_data(
+    system_id: int,
+    onboarding_data: dict,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Save onboarding data for a system."""
+    from app.models import OnboardingData
+    import json
+    
+    # Check if system exists and belongs to org
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    # Check if onboarding data already exists
+    existing_data = db.query(OnboardingData).filter(
+        OnboardingData.system_id == system_id,
+        OnboardingData.org_id == org.id
+    ).first()
+    
+    if existing_data:
+        # Update existing data
+        existing_data.data_json = json.dumps(onboarding_data)
+        existing_data.updated_at = datetime.now(timezone.utc)
+    else:
+        # Create new data
+        new_data = OnboardingData(
+            org_id=org.id,
+            system_id=system_id,
+            data_json=json.dumps(onboarding_data)
+        )
+        db.add(new_data)
+    
+    db.commit()
+    return {"status": "success", "message": "Onboarding data saved"}
+
+
+@router.get("/{system_id}/onboarding-data")
+async def get_onboarding_data(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Get onboarding data for a system."""
+    from app.models import OnboardingData
+    import json
+    
+    # Check if system exists and belongs to org
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    # Get onboarding data
+    onboarding_data = db.query(OnboardingData).filter(
+        OnboardingData.system_id == system_id,
+        OnboardingData.org_id == org.id
+    ).first()
+    
+    if not onboarding_data:
+        return {"data": None}
+    
+    try:
+        data = json.loads(onboarding_data.data_json)
+        return {"data": data}
+    except json.JSONDecodeError:
+        return {"data": None}
+
+
+@router.get("/{system_id}/soa.csv")
+def export_soa_csv(system_id: int, org: Organization = Depends(verify_api_key), db: Session = Depends(get_db)):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["iso_clause", "applicable", "justification"])
+    # MVP: applicable if there is at least one control mapped to clause; justification from rationale
+    items = (
+        db.query(Control)
+        .filter(Control.system_id == system_id, Control.org_id == org.id)
+        .order_by(Control.iso_clause)
+        .all()
+    )
+    for c in items:
+        writer.writerow([c.iso_clause or "", True, c.rationale or ""])
+    return Response(content=output.getvalue(), media_type="text/csv")
 

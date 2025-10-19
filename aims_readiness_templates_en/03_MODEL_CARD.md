@@ -2,17 +2,26 @@
 template_id: model_card_v1
 iso_clauses: ["A.6.2","B.6"]
 ai_act: ["Annex IV §8"]
-version: "1.0.0"
+version: "{{ version }}"
 language: "en"
-generated_at: "2025-10-17T08:42:56Z"
+generated_at: "{{ generated_at }}"
 ---
 
-# Model Card — <System Name> v<Version>
+# Model Card — {{ system.name }} v1.0
+
+**Organization:** {{ company_name }}  
+**System:** {{ system.name }}  
+**Domain:** {{ system_domain }}  
+**AI Act Classification:** {{ ai_act_classification }}  
+**Generated:** {{ generated_at }}
 
 ## Overview
-- Objective: <business objective>
-- Algorithm: <e.g., Gradient Boosted Trees / Transformer>
-- Owners: <ML Lead / Product Owner>
+- Objective: {{ system_purpose }}
+- Algorithm: AI/ML System
+- Owners: {{ company_name }} AI Team
+- General Purpose AI: {{ "Yes" if is_gpai else "No" }}
+- Biometric Data: {{ "Yes" if uses_biometrics else "No" }}
+- Personal Data: {{ "Yes" if personal_data else "No" }}
 
 ## Data & Training
 - Sources: <datasets, dates, jurisdictions>

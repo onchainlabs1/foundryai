@@ -12,6 +12,22 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
   const [activeTab, setActiveTab] = useState('overview')
   const [assessment, setAssessment] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [system, setSystem] = useState<any>(null)
+  const [systemLoading, setSystemLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSystem = async () => {
+      try {
+        const systemData = await api.getSystem(parseInt(params.id))
+        setSystem(systemData)
+      } catch (error) {
+        console.error('Failed to fetch system:', error)
+      } finally {
+        setSystemLoading(false)
+      }
+    }
+    fetchSystem()
+  }, [params.id])
 
   const handleAssess = async () => {
     setLoading(true)
@@ -83,11 +99,101 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
             <CardDescription>Basic information about the AI system</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Detailed system information will be displayed here
-              </p>
-            </div>
+            {systemLoading ? (
+              <div className="space-y-4">
+                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+              </div>
+            ) : system ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">System Name</h3>
+                      <p className="text-lg font-medium">{system.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Purpose</h3>
+                      <p className="text-sm">{system.purpose || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Domain</h3>
+                      <p className="text-sm">{system.domain || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Lifecycle Stage</h3>
+                      <p className="text-sm">{system.lifecycle_stage || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">AI Act Classification</h3>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                        system.ai_act_class === 'high' ? 'bg-red-100 text-red-800' :
+                        system.ai_act_class === 'limited' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {system.ai_act_class?.toUpperCase() || 'N/A'}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Deployment Context</h3>
+                      <p className="text-sm">{system.deployment_context || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">System Owner</h3>
+                      <p className="text-sm">{system.owner_email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Risk Category</h3>
+                      <p className="text-sm">{system.risk_category || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t pt-6">
+                  <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide mb-4">System Characteristics</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-3 h-3 rounded-full ${
+                        system.uses_biometrics ? 'bg-red-500' : 'bg-gray-300'
+                      }`}></span>
+                      <span className="text-sm">Uses Biometrics</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-3 h-3 rounded-full ${
+                        system.is_general_purpose_ai ? 'bg-purple-500' : 'bg-gray-300'
+                      }`}></span>
+                      <span className="text-sm">General Purpose AI</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-3 h-3 rounded-full ${
+                        system.impacts_fundamental_rights ? 'bg-orange-500' : 'bg-gray-300'
+                      }`}></span>
+                      <span className="text-sm">Impacts Rights</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-3 h-3 rounded-full ${
+                        system.personal_data_processed ? 'bg-blue-500' : 'bg-gray-300'
+                      }`}></span>
+                      <span className="text-sm">Personal Data</span>
+                    </div>
+                  </div>
+                </div>
+
+                {system.notes && (
+                  <div className="border-t pt-6">
+                    <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide mb-2">Notes</h3>
+                    <p className="text-sm text-gray-700">{system.notes}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Failed to load system data</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

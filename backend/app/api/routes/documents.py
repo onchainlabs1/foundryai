@@ -1,0 +1,355 @@
+"""
+Document generation and management endpoints.
+"""
+
+import os
+from typing import List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Response, Body
+from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
+
+from app.core.security import verify_api_key
+from app.database import get_db
+from app.models import AISystem, Organization
+from app.services.document_generator import DocumentGenerator
+
+router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.post("/systems/{system_id}/generate")
+async def generate_system_documents(
+    system_id: int,
+    onboarding_data: Dict[str, Any] = Body(default=None),
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Generate all compliance documents for a system with real onboarding data."""
+    
+    # Get system
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    # Use provided onboarding data or fallback to defaults
+    if not onboarding_data:
+        onboarding_data = {
+            "company": {
+                "name": org.name,
+                "address": "",
+                "industry": ""
+            },
+            "risks": {
+                "topRisks": [],
+                "mitigationStrategies": []
+            },
+            "oversight": {
+                "oversightRules": [],
+                "escalationPaths": []
+            },
+            "monitoring": {
+                "keyMetrics": [],
+                "reviewFrequency": "Quarterly"
+            }
+        }
+    
+    try:
+        generator = DocumentGenerator()
+        generated_docs = generator.generate_all_documents(
+            system_id=system_id,
+            org_id=org.id,
+            onboarding_data=onboarding_data
+        )
+        
+        return {
+            "system_id": system_id,
+            "generated_documents": len(generated_docs),
+            "documents": generated_docs,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Document generation failed: {str(e)}")
+
+
+@router.get("/systems/{system_id}/list")
+async def list_system_documents(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """List all generated documents for a system."""
+    
+    # Verify system exists and belongs to organization
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    try:
+        generator = DocumentGenerator()
+        documents = generator.get_document_list(system_id=system_id, org_id=org.id)
+        
+        return {
+            "system_id": system_id,
+            "documents": documents,
+            "total_count": len(documents)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
+
+
+@router.get("/systems/{system_id}/download/{doc_type}")
+async def download_document(
+    system_id: int,
+    doc_type: str,
+    format: str = "markdown",
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Download a specific document for a system."""
+    
+    # Verify system exists and belongs to organization
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    if format not in ["markdown", "pdf"]:
+        raise HTTPException(status_code=400, detail="Format must be 'markdown' or 'pdf'")
+    
+    try:
+        generator = DocumentGenerator()
+        content = generator.get_document_content(
+            system_id=system_id,
+            org_id=org.id,
+            doc_type=doc_type,
+            format=format
+        )
+        
+        # Determine content type and file extension
+        if format == "markdown":
+            media_type = "text/markdown"
+            file_extension = "md"
+        else:  # pdf
+            media_type = "application/pdf"
+            file_extension = "pdf"
+        
+        # Set filename
+        filename = f"{doc_type}_{system.name.replace(' ', '_')}.{file_extension}"
+        
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Document {doc_type} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
+
+
+@router.get("/systems/{system_id}/preview/{doc_type}")
+async def preview_document(
+    system_id: int,
+    doc_type: str,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Preview a document as HTML."""
+    
+    # Verify system exists and belongs to organization
+    system = db.query(AISystem).filter(
+        AISystem.id == system_id,
+        AISystem.org_id == org.id
+    ).first()
+    
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    try:
+        generator = DocumentGenerator()
+        content = generator.get_document_content(
+            system_id=system_id,
+            org_id=org.id,
+            doc_type=doc_type,
+            format="markdown"
+        )
+        
+        # Convert markdown to HTML
+        import markdown
+        html_content = markdown.markdown(
+            content.decode('utf-8'),
+            extensions=['tables', 'fenced_code', 'toc']
+        )
+        
+        # Wrap in HTML structure
+        full_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>{doc_type.replace('_', ' ').title()} - {system.name}</title>
+            <style>
+                body {{
+                    font-family: 'Arial', sans-serif;
+                    line-height: 1.6;
+                    margin: 40px;
+                    color: #333;
+                    max-width: 1200px;
+                }}
+                h1 {{
+                    color: #2c3e50;
+                    border-bottom: 2px solid #3498db;
+                    padding-bottom: 10px;
+                }}
+                h2 {{
+                    color: #34495e;
+                    margin-top: 30px;
+                }}
+                h3 {{
+                    color: #7f8c8d;
+                }}
+                table {{
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin: 20px 0;
+                }}
+                th, td {{
+                    border: 1px solid #ddd;
+                    padding: 12px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #f8f9fa;
+                    font-weight: bold;
+                }}
+                code {{
+                    background-color: #f4f4f4;
+                    padding: 2px 4px;
+                    border-radius: 3px;
+                    font-family: 'Courier New', monospace;
+                }}
+                pre {{
+                    background-color: #f4f4f4;
+                    padding: 15px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }}
+            </style>
+        </head>
+        <body>
+            {html_content}
+        </body>
+        </html>
+        """
+        
+        return Response(content=full_html, media_type="text/html")
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Document {doc_type} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}")
+
+
+@router.get("/templates")
+async def list_available_templates(
+    org: Organization = Depends(verify_api_key),
+):
+    """List all available document templates."""
+    
+    templates = [
+        {
+            "id": "risk_assessment",
+            "name": "Risk Assessment",
+            "description": "ISO/IEC 42001 clause 6.1 - Risk management plan",
+            "iso_clauses": ["6.1", "Annex C"],
+            "ai_act": ["Annex IV §6"]
+        },
+        {
+            "id": "impact_assessment", 
+            "name": "Impact Assessment",
+            "description": "EU AI Act Annex IV - Impact assessment for high-risk AI systems",
+            "iso_clauses": ["6.2"],
+            "ai_act": ["Annex IV"]
+        },
+        {
+            "id": "model_card",
+            "name": "Model Card",
+            "description": "Model documentation and transparency requirements",
+            "iso_clauses": ["A.6.2", "B.6"],
+            "ai_act": ["Annex IV §8"]
+        },
+        {
+            "id": "data_sheet",
+            "name": "Data Sheet",
+            "description": "Dataset documentation and quality assessment",
+            "iso_clauses": ["6.3"],
+            "ai_act": ["Annex IV §7"]
+        },
+        {
+            "id": "logging_plan",
+            "name": "Logging Plan",
+            "description": "System logging and audit trail requirements",
+            "iso_clauses": ["7.1"],
+            "ai_act": ["Annex IV §9"]
+        },
+        {
+            "id": "monitoring_report",
+            "name": "Monitoring Report",
+            "description": "Performance monitoring and post-market surveillance",
+            "iso_clauses": ["7.2"],
+            "ai_act": ["Annex IV §10"]
+        },
+        {
+            "id": "human_oversight",
+            "name": "Human Oversight SOP",
+            "description": "Human oversight procedures and escalation paths",
+            "iso_clauses": ["6.4"],
+            "ai_act": ["Annex IV §11"]
+        },
+        {
+            "id": "appeals_flow",
+            "name": "Appeals Flow",
+            "description": "Appeals and redress procedures",
+            "iso_clauses": ["6.5"],
+            "ai_act": ["Annex IV §12"]
+        },
+        {
+            "id": "soa",
+            "name": "Statement of Applicability",
+            "description": "ISO/IEC 42001 Statement of Applicability",
+            "iso_clauses": ["4.2.3"],
+            "ai_act": []
+        },
+        {
+            "id": "policy_register",
+            "name": "Policy Register",
+            "description": "AI governance policies and procedures",
+            "iso_clauses": ["5.2"],
+            "ai_act": []
+        },
+        {
+            "id": "audit_log",
+            "name": "Audit Log",
+            "description": "Audit trail and compliance monitoring",
+            "iso_clauses": ["7.3"],
+            "ai_act": ["Annex IV §13"]
+        }
+    ]
+    
+    return {
+        "templates": templates,
+        "total_count": len(templates)
+    }

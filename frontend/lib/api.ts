@@ -2,7 +2,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://foundryai.onrender.c
 
 function getApiKey(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('apiKey');
+  
+  // Try to get from localStorage first
+  const storedKey = localStorage.getItem('apiKey') || localStorage.getItem('api_key');
+  if (storedKey) {
+    return storedKey;
+  }
+  
+  // If no key in localStorage, use development key and store it
+  const devKey = 'dev-aims-demo-key';
+  localStorage.setItem('apiKey', devKey);
+  return devKey;
 }
 
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
@@ -33,12 +43,34 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
 export const api = {
   // Systems
   getSystems: () => apiRequest('/systems'),
+  getSystem: (systemId: number) => apiRequest(`/systems/${systemId}`),
   
   createSystem: (data: any) => 
     apiRequest('/systems', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  
+  updateSystem: (systemId: number, data: any) =>
+    apiRequest(`/systems/${systemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  
+  patchSystem: (systemId: number, data: any) =>
+    apiRequest(`/systems/${systemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  
+  saveOnboardingData: (systemId: number, data: any) =>
+    apiRequest(`/systems/${systemId}/onboarding-data`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  getOnboardingData: (systemId: number) =>
+    apiRequest(`/systems/${systemId}/onboarding-data`),
   
   importSystems: (file: File) => {
     const formData = new FormData();
@@ -62,7 +94,7 @@ export const api = {
     apiRequest(`/systems/${systemId}/assess`, { method: 'POST' }),
   
   // Evidence
-  uploadEvidence: (systemId: number, label: string, file: File, metadata: any = {}) => {
+  uploadEvidence: async (systemId: number, label: string, file: File, metadata: any = {}) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('label', label);
@@ -71,16 +103,25 @@ export const api = {
     });
     
     const apiKey = getApiKey();
-    return fetch(`${API_URL}/evidence/${systemId}`, {
+    const response = await fetch(`${API_URL}/evidence/${systemId}`, {
       method: 'POST',
       headers: apiKey ? { 'X-API-Key': apiKey } : {},
       body: formData,
-    }).then(r => r.json());
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(error.detail || 'Evidence upload failed');
+    }
+    
+    return response.json();
   },
   
   // Reports
   getReportSummary: () => apiRequest('/reports/summary'),
   getReportScore: () => apiRequest('/reports/score'),
+  getBlockingIssues: () => apiRequest('/reports/blocking-issues'),
+  getUpcomingDeadlines: () => apiRequest('/reports/upcoming-deadlines'),
   
   // FRIA
   createFRIA: (systemId: number, data: any) =>
@@ -170,6 +211,44 @@ export const api = {
       const error = await response.text();
       throw new Error(error || 'Failed to load template');
     }
+    return response.text();
+  },
+
+  // Documents
+  generateSystemDocuments: (systemId: number, onboardingData?: any) =>
+    apiRequest(`/documents/systems/${systemId}/generate`, {
+      method: 'POST',
+      body: onboardingData ? JSON.stringify(onboardingData) : undefined,
+    }),
+
+  getSystemDocuments: (systemId: number) =>
+    apiRequest(`/documents/systems/${systemId}/list`),
+
+  downloadDocument: async (systemId: number, docType: string, format: 'markdown' | 'pdf') => {
+    const apiKey = getApiKey();
+    const response = await fetch(`${API_URL}/documents/systems/${systemId}/download/${docType}?format=${format}`, {
+      headers: apiKey ? { 'X-API-Key': apiKey } : {},
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Download failed' }));
+      throw new Error(error.detail || 'Download failed');
+    }
+    
+    return response.blob();
+  },
+
+  previewDocument: async (systemId: number, docType: string) => {
+    const apiKey = getApiKey();
+    const response = await fetch(`${API_URL}/documents/systems/${systemId}/preview/${docType}`, {
+      headers: apiKey ? { 'X-API-Key': apiKey } : {},
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Preview failed' }));
+      throw new Error(error.detail || 'Preview failed');
+    }
+    
     return response.text();
   },
 };

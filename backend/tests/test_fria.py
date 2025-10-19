@@ -13,8 +13,19 @@ HEADERS = {"X-API-Key": API_KEY}
 
 def test_create_fria():
     """Test creating a FRIA assessment."""
+    # First, create a system
+    system_payload = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "high"
+    }
+    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
+    assert system_response.status_code == 200
+    system_id = system_response.json()["id"]
+    
     payload = {
-        "system_id": 1,
+        "system_id": system_id,
         "applicable": True,
         "answers": {
             "biometric_data": "Yes",
@@ -22,7 +33,7 @@ def test_create_fria():
             "critical_infrastructure": "No"
         }
     }
-    response = client.post("/systems/1/fria", json=payload, headers=HEADERS)
+    response = client.post(f"/systems/{system_id}/fria", json=payload, headers=HEADERS)
     assert response.status_code == 200
     data = response.json()
     assert data["applicable"] is True
@@ -33,13 +44,24 @@ def test_create_fria():
 
 def test_create_fria_not_applicable():
     """Test creating a FRIA marked as not applicable."""
+    # First, create a system
+    system_payload = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "minimal"
+    }
+    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
+    assert system_response.status_code == 200
+    system_id = system_response.json()["id"]
+    
     payload = {
-        "system_id": 1,
+        "system_id": system_id,
         "applicable": False,
         "answers": {},
         "justification": "System is minimal risk and does not require FRIA"
     }
-    response = client.post("/systems/1/fria", json=payload, headers=HEADERS)
+    response = client.post(f"/systems/{system_id}/fria", json=payload, headers=HEADERS)
     assert response.status_code == 200
     data = response.json()
     assert data["applicable"] is False

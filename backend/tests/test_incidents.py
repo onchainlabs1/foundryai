@@ -1,7 +1,7 @@
 """Tests for Incidents endpoints."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -14,8 +14,19 @@ HEADERS = {"X-API-Key": API_KEY}
 
 def test_create_incident():
     """Test creating an incident."""
+    # First, create a system
+    system_payload = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "minimal"
+    }
+    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
+    assert system_response.status_code == 200
+    system_id = system_response.json()["id"]
+    
     payload = {
-        "system_id": 1,
+        "system_id": system_id,
         "severity": "medium",
         "description": "Model performance degradation detected",
         "corrective_action": "Investigating root cause"
@@ -46,9 +57,20 @@ def test_list_incidents_by_system():
 
 def test_update_incident():
     """Test updating an incident (resolving it)."""
+    # First, create a system
+    system_payload = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "minimal"
+    }
+    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
+    assert system_response.status_code == 200
+    system_id = system_response.json()["id"]
+    
     # First create an incident
     create_payload = {
-        "system_id": 1,
+        "system_id": system_id,
         "severity": "low",
         "description": "Test incident"
     }
@@ -58,10 +80,10 @@ def test_update_incident():
     
     # Now update it - must include all required fields (IncidentCreate schema)
     update_payload = {
-        "system_id": 1,
+        "system_id": system_id,
         "severity": "low",
         "description": "Test incident",
-        "resolved_at": datetime.utcnow().isoformat(),
+        "resolved_at": datetime.now(timezone.utc).isoformat(),
         "corrective_action": "Issue resolved"
     }
     response = client.patch(f"/incidents/{incident_id}", json=update_payload, headers=HEADERS)
