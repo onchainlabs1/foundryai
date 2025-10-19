@@ -157,7 +157,7 @@ async def update_action(
         raise HTTPException(status_code=404, detail="Action not found")
     
     # Update fields
-        update_data = action_data.model_dump(exclude_unset=True)
+    update_data = action_data.model_dump(exclude_unset=True)
     
     # Handle due_date parsing
     if 'due_date' in update_data and update_data['due_date']:

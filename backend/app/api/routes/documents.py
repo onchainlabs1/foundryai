@@ -57,6 +57,22 @@ async def generate_system_documents(
         }
     
     try:
+        # Normalize onboarding data structure
+        if "systems" in onboarding_data and isinstance(onboarding_data["systems"], list):
+            # Convert list to dict format expected by DocumentGenerator
+            systems_dict = {}
+            for i, system in enumerate(onboarding_data["systems"]):
+                systems_dict[f"system_{i}"] = system
+            onboarding_data["systems"] = systems_dict
+        
+        # Normalize risks data structure
+        if "risks" in onboarding_data and isinstance(onboarding_data["risks"], list):
+            # Convert list to dict format expected by DocumentGenerator
+            onboarding_data["risks"] = {
+                "topRisks": onboarding_data["risks"],
+                "mitigationStrategies": []
+            }
+        
         generator = DocumentGenerator()
         generated_docs = generator.generate_all_documents(
             system_id=system_id,

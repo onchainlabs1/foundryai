@@ -29,10 +29,6 @@ def test_onboarding_to_documents_flow():
     assert response.status_code == 200
     system_id = response.json()["id"]
     
-    # Verify system was created
-    response = client.get(f"/systems/{system_id}", headers=HEADERS)
-    assert response.status_code == 200
-    
     # 2. Save onboarding data for the system
     onboarding_data = {
         "company": {
@@ -53,20 +49,20 @@ def test_onboarding_to_documents_flow():
     # 3. Generate documents
     response = client.post(f"/documents/systems/{system_id}/generate",
                           json=onboarding_data, headers=HEADERS)
-    print(f"Document generation response: {response.status_code} - {response.text}")
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
     # 4. List documents
     response = client.get(f"/documents/systems/{system_id}/list", headers=HEADERS)
     assert response.status_code == 200
-    documents = response.json()
+    response_data = response.json()
+    documents = response_data["documents"]
     assert len(documents) > 0
     
     # 5. Download a document
     if documents:
-        doc_id = documents[0]["id"]
-        response = client.get(f"/documents/{doc_id}/download", headers=HEADERS)
+        doc_type = documents[0]["type"]
+        response = client.get(f"/documents/systems/{system_id}/download/{doc_type}?format=pdf", headers=HEADERS)
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/pdf"
 

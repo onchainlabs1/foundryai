@@ -221,6 +221,7 @@ def list_controls(
 
 
 @router.post("/{system_id}/onboarding-data")
+@router.put("/{system_id}/onboarding-data")  # Alias for compatibility
 async def save_onboarding_data(
     system_id: int,
     onboarding_data: dict,
