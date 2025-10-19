@@ -91,7 +91,7 @@ def extract_text_from_pdf(file_path: str) -> List[dict]:
         
     except Exception as e:
         # If extraction fails, return empty list (graceful degradation)
-        print(f"Warning: Failed to extract text from {file_path}: {e}")
+        logger.warning(f"Failed to extract text from {file_path}: {e}")
         return []
     
     return pages_data
@@ -119,7 +119,7 @@ def ingest_evidence_text(
     ).count()
     
     if existing_count > 0:
-        print(f"Evidence {evidence.id} already ingested, skipping")
+        logger.info(f"Evidence {evidence.id} already ingested, skipping")
         return 0
     
     # Infer clause from filename/label
@@ -132,7 +132,7 @@ def ingest_evidence_text(
     pages_data = extract_text_from_pdf(file_path)
     
     if not pages_data:
-        print(f"Warning: No text extracted from {file_path}, creating placeholder")
+        logger.warning(f"No text extracted from {file_path}, creating placeholder")
         # Create placeholder for non-PDF or empty files
         pages_data = [{
             "page": 1,
@@ -161,7 +161,7 @@ def ingest_evidence_text(
     
     db.commit()
     
-    print(f"Ingested {created_count} pages from evidence {evidence.id}")
+    logger.info(f"Ingested {created_count} pages from evidence {evidence.id}")
     return created_count
 
 

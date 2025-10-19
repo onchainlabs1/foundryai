@@ -20,8 +20,8 @@ export default function LoginPage() {
   }
 
   const handleDemoMode = () => {
-    setApiKey('dev-aims-demo-key')
-    router.push('/')
+    // Demo mode removed for security - users must provide their own API key
+    alert('Demo mode is not available. Please contact your administrator for an API key.')
   }
 
   return (
@@ -39,7 +39,7 @@ export default function LoginPage() {
               <label className="text-sm font-medium mb-2 block">API Key</label>
               <Input
                 type="password"
-                placeholder="dev-aims-demo-key"
+                placeholder="Enter your API key"
                 value={apiKey}
                 onChange={(e) => setApiKeyInput(e.target.value)}
                 required
@@ -56,7 +56,7 @@ export default function LoginPage() {
 
           <div className="mt-6 pt-6 border-t">
             <div className="text-center mb-3">
-              <p className="text-sm text-muted-foreground">Or try the demo</p>
+              <p className="text-sm text-muted-foreground">Need an API key?</p>
             </div>
             <Button 
               type="button" 
@@ -64,10 +64,10 @@ export default function LoginPage() {
               className="w-full"
               onClick={handleDemoMode}
             >
-              🚀 Enter Demo Mode
+              📞 Contact Administrator
             </Button>
             <p className="text-xs text-muted-foreground text-center mt-2">
-              Explore with pre-loaded sample data (4 systems, controls, evidence, incidents)
+              Contact your system administrator to obtain an API key for access
             </p>
           </div>
         </CardContent>

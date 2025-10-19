@@ -64,7 +64,7 @@ npm start
 
 Currently uses API key authentication stored in localStorage. 
 
-⚠️ **Development Only**: This approach is not secure for production. OAuth will be added in future versions.
+⚠️ **Security Notice**: API keys must be provided by your system administrator. Demo mode has been removed for security reasons. OAuth will be added in future versions.
 
 ## Pages
 

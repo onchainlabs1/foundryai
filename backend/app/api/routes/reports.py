@@ -60,49 +60,40 @@ async def get_summary(
         evidence_coverage_status = "unknown"
         
         try:
-            # Use raw SQL to avoid SQLAlchemy trying to access non-existent columns
-            from sqlalchemy import text
+            # Use ORM queries instead of raw SQL for better type safety
+            from app.models import Control, Evidence
             
-            # Count controls
-            controls_result = db.execute(text("SELECT COUNT(*) FROM controls WHERE org_id = :org_id"), {"org_id": org.id})
-            total_controls = controls_result.scalar()
+            # Count controls using ORM
+            total_controls = db.query(Control).filter(Control.org_id == org.id).count()
             
             if total_controls > 0:
-                # Count evidence with control_name (legacy approach)
-                evidence_result = db.execute(
-                    text("SELECT COUNT(*) FROM evidence WHERE org_id = :org_id AND control_name IS NOT NULL"), 
-                    {"org_id": org.id}
-                )
-                evidence_count = evidence_result.scalar()
+                # Count evidence with control_id (preferred approach)
+                evidence_with_control_id = db.query(Evidence).filter(
+                    Evidence.org_id == org.id,
+                    Evidence.control_id.isnot(None)
+                ).count()
                 
-                # Try to count evidence with control_id (if column exists)
-                try:
-                    evidence_with_id_result = db.execute(
-                        text("SELECT COUNT(*) FROM evidence WHERE org_id = :org_id AND control_id IS NOT NULL"), 
-                        {"org_id": org.id}
-                    )
-                    evidence_with_id_count = evidence_with_id_result.scalar()
-                    
-                    if evidence_with_id_count > 0:
-                        evidence_coverage_pct = (evidence_with_id_count / total_controls) * 100
-                        evidence_coverage_status = "calculated_with_id"
-                    elif evidence_count > 0:
-                        evidence_coverage_pct = (evidence_count / total_controls) * 100
-                        evidence_coverage_status = "calculated_legacy"
-                    else:
-                        evidence_coverage_pct = 0.0
-                        evidence_coverage_status = "no_evidence"
-                except Exception:
-                    # control_id column doesn't exist yet, fallback to control_name
-                    if evidence_count > 0:
-                        evidence_coverage_pct = (evidence_count / total_controls) * 100
-                        evidence_coverage_status = "calculated_legacy"
-                    else:
-                        evidence_coverage_pct = 0.0
-                        evidence_coverage_status = "no_evidence"
+                # Count evidence with control_name (legacy approach)
+                evidence_with_control_name = db.query(Evidence).filter(
+                    Evidence.org_id == org.id,
+                    Evidence.control_name.isnot(None)
+                ).count()
+                
+                if evidence_with_control_id > 0:
+                    evidence_coverage_pct = (evidence_with_control_id / total_controls) * 100
+                    evidence_coverage_status = "calculated_with_id"
+                    logger.info(f"Evidence coverage calculated using control_id: {evidence_coverage_pct:.2f}%")
+                elif evidence_with_control_name > 0:
+                    evidence_coverage_pct = (evidence_with_control_name / total_controls) * 100
+                    evidence_coverage_status = "calculated_legacy"
+                    logger.info(f"Evidence coverage calculated using control_name (legacy): {evidence_coverage_pct:.2f}%")
+                else:
+                    evidence_coverage_pct = 0.0
+                    evidence_coverage_status = "no_evidence"
+                    logger.info("No evidence found for organization")
             else:
                 evidence_coverage_status = "no_controls"
-                logger.info("No controls found for organization - evidence coverage set to 0%%")
+                logger.info("No controls found for organization - evidence coverage set to 0%")
         except Exception as e:
             evidence_coverage_status = "error"
             logger.error(f"Could not calculate evidence coverage: {e}")

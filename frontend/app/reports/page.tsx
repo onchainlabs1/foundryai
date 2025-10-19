@@ -310,10 +310,17 @@ export default function ReportsPage() {
                 size="lg"
                 onClick={async () => {
                   try {
-                    await downloadFile('/reports/annex-iv.zip?system_id=1', 'annex-iv.zip');
+                    // Get the first available system ID for Annex IV export
+                    const systems = await api.getSystems();
+                    if (systems.length === 0) {
+                      alert('No systems available for Annex IV export. Please create a system first.');
+                      return;
+                    }
+                    const systemId = systems[0].id;
+                    await downloadFile(`/reports/annex-iv.zip?system_id=${systemId}`, 'annex-iv.zip');
                   } catch (error) {
                     console.error('Download failed:', error);
-                    alert('Download failed. Please check your API key.');
+                    alert('Download failed. Please check your API key and ensure you have systems configured.');
                   }
                 }}
               >

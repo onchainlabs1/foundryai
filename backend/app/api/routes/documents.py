@@ -240,9 +240,37 @@ async def preview_document(
         
         # Convert markdown to HTML
         import markdown
+        import bleach
+        
         html_content = markdown.markdown(
             content.decode('utf-8'),
             extensions=['tables', 'fenced_code', 'toc']
+        )
+        
+        # Sanitize HTML to prevent XSS attacks
+        allowed_tags = [
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'p', 'br', 'strong', 'em', 'u', 'b', 'i',
+            'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td',
+            'a', 'img', 'div', 'span'
+        ]
+        
+        allowed_attributes = {
+            'a': ['href', 'title'],
+            'img': ['src', 'alt', 'title', 'width', 'height'],
+            'table': ['class'],
+            'th': ['class'],
+            'td': ['class'],
+            'div': ['class'],
+            'span': ['class']
+        }
+        
+        html_content = bleach.clean(
+            html_content,
+            tags=allowed_tags,
+            attributes=allowed_attributes,
+            strip=True
         )
         
         # Wrap in HTML structure

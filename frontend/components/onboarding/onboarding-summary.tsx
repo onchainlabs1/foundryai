@@ -156,7 +156,7 @@ export default function OnboardingSummary({ data, onRestart }: OnboardingSummary
           Onboarding Complete!
         </h1>
         <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-          Your AI governance framework has been set up successfully. You're now ready to generate compliance documents.
+          Your AI governance framework has been set up successfully. You&apos;re now ready to generate compliance documents.
         </p>
       </div>
 
@@ -516,7 +516,7 @@ export default function OnboardingSummary({ data, onRestart }: OnboardingSummary
           </CardHeader>
           <CardContent>
             <div className="text-muted-foreground space-y-4">
-              <p className="text-lg font-medium">Your AI governance framework is now set up! Here's what you can do next:</p>
+              <p className="text-lg font-medium">Your AI governance framework is now set up! Here&apos;s what you can do next:</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">

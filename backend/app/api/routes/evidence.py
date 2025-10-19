@@ -70,6 +70,11 @@ async def upload_evidence(
     db: Session = Depends(get_db),
 ):
     """Upload evidence file or content for an AI system."""
+    import logging
+    from fastapi import HTTPException
+    
+    logger = logging.getLogger(__name__)
+    
     # Verify system exists and belongs to org
     system = db.query(AISystem).filter(AISystem.id == system_id, AISystem.org_id == org.id).first()
     if not system:
@@ -77,6 +82,35 @@ async def upload_evidence(
 
     # Handle either file upload or content
     if file and file.filename:
+        # Security validations for file upload
+        MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB limit
+        ALLOWED_MIME_TYPES = {
+            'application/pdf',
+            'text/plain',
+            'text/markdown',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'text/csv'
+        }
+        
+        # Check file size
+        file_content = await file.read()
+        if len(file_content) > MAX_FILE_SIZE:
+            logger.warning(f"File upload rejected: size {len(file_content)} exceeds limit {MAX_FILE_SIZE}")
+            raise HTTPException(status_code=413, detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB")
+        
+        # Check MIME type
+        if file.content_type not in ALLOWED_MIME_TYPES:
+            logger.warning(f"File upload rejected: invalid MIME type {file.content_type}")
+            raise HTTPException(status_code=415, detail=f"File type not allowed. Allowed types: {', '.join(ALLOWED_MIME_TYPES)}")
+        
+        # Reset file pointer for processing
+        await file.seek(0)
         # Traditional file upload
         if not label:
             label = file.filename or "Uploaded Evidence"
@@ -131,7 +165,7 @@ async def upload_evidence(
         ingest_evidence_text(db, evidence, str(file_path))
     except Exception as e:
         # Log error but don't fail the upload
-        print(f"Warning: Text extraction failed for evidence {evidence.id}: {e}")
+        logger.warning(f"Text extraction failed for evidence {evidence.id}: {e}")
 
     return evidence
 

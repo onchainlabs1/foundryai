@@ -31,9 +31,9 @@ async def lifespan(app: FastAPI):
     existing_tables = inspector.get_table_names()
     
     if "artifact_text" not in existing_tables:
-        print("Creating missing tables (including artifact_text)...")
+        logger.info("Creating missing tables (including artifact_text)...")
         Base.metadata.create_all(bind=engine)
-        print("✅ All tables created")
+        logger.info("✅ All tables created")
     else:
         # Ensure all other tables exist too
         Base.metadata.create_all(bind=engine)
@@ -57,15 +57,15 @@ async def lifespan(app: FastAPI):
                     # Update API key
                     existing_by_name.api_key = settings.ORG_API_KEY
                     db.commit()
-                    print(f"Updated organization API key: {settings.ORG_NAME} ({settings.ORG_API_KEY})")
+                    logger.info(f"Updated organization API key: {settings.ORG_NAME} ({settings.ORG_API_KEY})")
                 else:
                     # Create new org
                     org = Organization(name=settings.ORG_NAME, api_key=settings.ORG_API_KEY)
                     db.add(org)
                     db.commit()
-                    print(f"Seeded organization: {settings.ORG_NAME} ({settings.ORG_API_KEY})")
+                    logger.info(f"Seeded organization: {settings.ORG_NAME} ({settings.ORG_API_KEY})")
             else:
-                print(f"Organization already exists: {settings.ORG_NAME} ({settings.ORG_API_KEY})")
+                logger.info(f"Organization already exists: {settings.ORG_NAME} ({settings.ORG_API_KEY})")
         finally:
             db.close()
 

@@ -247,7 +247,7 @@ export default function ComplianceSuite() {
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>LLM Refinement:</strong> Document refinement features are enabled. 
-            Use the "Refine wording" option in document previews to improve content.
+            Use the &quot;Refine wording&quot; option in document previews to improve content.
           </p>
         </div>
       )}

@@ -20,11 +20,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.database import SessionLocal, engine, Base
 from app.models import Organization, AISystem, Evidence, Control, FRIA, Incident
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def seed_demo_data():
     """Seed the database with demo data."""
-    print("🌱 Starting demo data seeding...")
+    logger.info("🌱 Starting demo data seeding...")
 
     # Create tables
     Base.metadata.create_all(bind=engine)
@@ -44,9 +47,9 @@ def seed_demo_data():
             db.add(demo_org)
             db.commit()
             db.refresh(demo_org)
-            print(f"✓ Created demo organization: {demo_org.name}")
+            logger.info(f"✓ Created demo organization: {demo_org.name}")
         else:
-            print(f"✓ Demo organization already exists: {demo_org.name}")
+            logger.info(f"✓ Demo organization already exists: {demo_org.name}")
 
         # Clear existing demo data for clean slate
         db.query(Incident).filter(Incident.org_id == demo_org.id).delete()
@@ -55,7 +58,7 @@ def seed_demo_data():
         db.query(Evidence).filter(Evidence.org_id == demo_org.id).delete()
         db.query(AISystem).filter(AISystem.org_id == demo_org.id).delete()
         db.commit()
-        print("✓ Cleared existing demo data")
+        logger.info("✓ Cleared existing demo data")
 
         # System 1: VisionID (High-Risk)
         vision_id = AISystem(
@@ -142,7 +145,7 @@ def seed_demo_data():
         db.refresh(credit_assist)
         db.refresh(chat_assist)
         db.refresh(ops_forecast)
-        print(f"✓ Created 4 AI systems")
+        logger.info(f"✓ Created 4 AI systems")
 
         # Add Controls for VisionID (High-Risk)
         vision_controls = [
@@ -272,7 +275,7 @@ def seed_demo_data():
 
         db.add_all(vision_controls + credit_controls + chat_controls + ops_controls)
         db.commit()
-        print(f"✓ Created {len(vision_controls + credit_controls + chat_controls + ops_controls)} controls")
+        logger.info(f"✓ Created {len(vision_controls + credit_controls + chat_controls + ops_controls)} controls")
 
         # Add Evidence
         evidence_items = [
@@ -324,7 +327,7 @@ def seed_demo_data():
 
         db.add_all(evidence_items)
         db.commit()
-        print(f"✓ Created {len(evidence_items)} evidence records")
+        logger.info(f"✓ Created {len(evidence_items)} evidence records")
 
         # Add FRIA for VisionID (High-Risk)
         vision_fria = FRIA(
@@ -403,7 +406,7 @@ Generated at: 2024-12-16T14:20:00Z"""
         db.add(credit_fria)
 
         db.commit()
-        print(f"✓ Created 2 FRIA assessments")
+        logger.info(f"✓ Created 2 FRIA assessments")
 
         # Add Incidents
         incidents = [
@@ -438,22 +441,22 @@ Generated at: 2024-12-16T14:20:00Z"""
 
         db.add_all(incidents)
         db.commit()
-        print(f"✓ Created {len(incidents)} incidents")
+        logger.info(f"✓ Created {len(incidents)} incidents")
 
-        print("\n✅ Demo data seeding completed successfully!")
-        print(f"\n📊 Summary:")
-        print(f"   - Organization: {demo_org.name}")
-        print(f"   - API Key: {demo_org.api_key}")
-        print(f"   - Systems: 4 (2 High-Risk, 1 GPAI, 1 Minimal)")
-        print(f"   - Controls: {len(vision_controls + credit_controls + chat_controls + ops_controls)}")
-        print(f"   - Evidence: {len(evidence_items)}")
-        print(f"   - FRIAs: 2")
-        print(f"   - Incidents: {len(incidents)} (1 open, 2 resolved)")
-        print(f"\n🚀 Ready to demo at: http://localhost:3002")
-        print(f"   Login with API key: {demo_org.api_key}")
+        logger.info("\n✅ Demo data seeding completed successfully!")
+        logger.info(f"\n📊 Summary:")
+        logger.info(f"   - Organization: {demo_org.name}")
+        logger.info(f"   - API Key: {demo_org.api_key}")
+        logger.info(f"   - Systems: 4 (2 High-Risk, 1 GPAI, 1 Minimal)")
+        logger.info(f"   - Controls: {len(vision_controls + credit_controls + chat_controls + ops_controls)}")
+        logger.info(f"   - Evidence: {len(evidence_items)}")
+        logger.info(f"   - FRIAs: 2")
+        logger.info(f"   - Incidents: {len(incidents)} (1 open, 2 resolved)")
+        logger.info(f"\n🚀 Ready to demo at: http://localhost:3002")
+        logger.info(f"   Login with API key: {demo_org.api_key}")
 
     except Exception as e:
-        print(f"❌ Error during seeding: {e}")
+        logger.error(f"❌ Error during seeding: {e}")
         db.rollback()
         raise
     finally:

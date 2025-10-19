@@ -36,6 +36,10 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 HEADERS = {"X-API-Key": "dev-aims-demo-key"}
 
+# Set SECRET_KEY for tests
+import os
+os.environ["SECRET_KEY"] = "dev"
+
 
 @pytest.fixture(autouse=True)
 def setup_test_org():
@@ -428,6 +432,173 @@ def test_document_generation_security():
         # Should contain availability flags instead
         assert "markdown_available" in doc_info
         assert "pdf_available" in doc_info
+
+
+def test_document_preview_xss_protection():
+    """Test that document preview is protected against XSS attacks."""
+    # Create a system first
+    system_data = {
+        "name": "XSS Test System",
+        "purpose": "Testing XSS protection",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Generate documents first
+    onboarding_data = {
+        "company": {"name": "Test Company"},
+        "systems": [system_data],
+        "risks": [{"type": "bias", "description": "Test risk"}],
+        "oversight": {"human_in_loop": True},
+        "monitoring": {"continuous": True}
+    }
+    
+    response = client.post(f"/documents/systems/{system_id}/generate",
+                          json=onboarding_data, headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Test preview with malicious content protection
+    response = client.get(f"/documents/systems/{system_id}/preview/risk_assessment", headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Check that response is HTML and doesn't contain dangerous scripts
+    html_content = response.text
+    assert "<!DOCTYPE html>" in html_content
+    assert "<script>" not in html_content.lower()
+    assert "javascript:" not in html_content.lower()
+    assert "onload=" not in html_content.lower()
+    assert "onerror=" not in html_content.lower()
+
+
+def test_evidence_upload_security():
+    """Test evidence upload security validations."""
+    # Create a system first
+    system_data = {
+        "name": "Upload Security Test System",
+        "purpose": "Testing upload security",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Test 1: Valid file upload (small text file)
+    test_content = b"This is a test evidence file."
+    files = {"file": ("test_evidence.txt", test_content, "text/plain")}
+    data = {
+        "label": "Test Evidence",
+        "iso42001_clause": "4.1",
+        "control_name": "Test Control",
+        "uploaded_by": "Test User"
+    }
+    
+    response = client.post(f"/evidence/{system_id}", files=files, data=data, headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Test 2: Invalid MIME type
+    files = {"file": ("malicious.exe", test_content, "application/x-executable")}
+    response = client.post(f"/evidence/{system_id}", files=files, data=data, headers=HEADERS)
+    assert response.status_code == 415  # Unsupported Media Type
+    
+    # Test 3: File too large (simulate with large content)
+    large_content = b"x" * (51 * 1024 * 1024)  # 51MB
+    files = {"file": ("large_file.txt", large_content, "text/plain")}
+    response = client.post(f"/evidence/{system_id}", files=files, data=data, headers=HEADERS)
+    assert response.status_code == 413  # Payload Too Large
+    
+    # Test 4: Valid markdown content upload
+    data = {
+        "content": "# Test Evidence\n\nThis is markdown content.",
+        "label": "Markdown Evidence",
+        "iso42001_clause": "4.2",
+        "control_name": "Test Control 2",
+        "uploaded_by": "Test User"
+    }
+    
+    response = client.post(f"/evidence/{system_id}", data=data, headers=HEADERS)
+    assert response.status_code == 200
+
+
+def test_annex_iv_download_with_system_id():
+    """Test that Annex IV download uses correct system_id parameter."""
+    # Create a system first
+    system_data = {
+        "name": "Annex IV Test System",
+        "purpose": "Testing Annex IV download",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Test Annex IV download with specific system_id
+    response = client.get(f"/reports/export/annex-iv.zip?system_id={system_id}", headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Verify response headers indicate a ZIP file
+    assert response.headers.get("content-type") == "application/zip"
+    assert "X-File-Hash" in response.headers
+    assert "X-File-Size" in response.headers
+    
+    # Test with invalid system_id
+    response = client.get("/reports/export/annex-iv.zip?system_id=99999", headers=HEADERS)
+    assert response.status_code == 404  # System not found
+    
+    # Test without system_id parameter
+    response = client.get("/reports/export/annex-iv.zip", headers=HEADERS)
+    assert response.status_code == 422  # Missing required parameter
+
+
+def test_reports_orm_queries():
+    """Test that reports use ORM queries instead of raw SQL."""
+    # Create a system first
+    system_data = {
+        "name": "ORM Test System",
+        "purpose": "Testing ORM queries",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Test reports summary endpoint
+    response = client.get("/reports/summary", headers=HEADERS)
+    assert response.status_code == 200
+    
+    summary = response.json()
+    
+    # Verify all expected fields are present
+    required_fields = [
+        "systems", "high_risk", "last_30d_incidents", 
+        "gpai_count", "evidence_coverage_pct", "evidence_coverage_status",
+        "open_actions_7d"
+    ]
+    
+    for field in required_fields:
+        assert field in summary, f"Missing field: {field}"
+    
+    # Verify data types
+    assert isinstance(summary["systems"], int)
+    assert isinstance(summary["high_risk"], int)
+    assert isinstance(summary["last_30d_incidents"], int)
+    assert isinstance(summary["gpai_count"], int)
+    assert isinstance(summary["evidence_coverage_pct"], (int, float))
+    assert isinstance(summary["evidence_coverage_status"], str)
+    assert isinstance(summary["open_actions_7d"], int)
+    
+    # Verify evidence coverage status is valid
+    valid_statuses = ["calculated_with_id", "calculated_legacy", "no_evidence", "no_controls", "error", "unknown"]
+    assert summary["evidence_coverage_status"] in valid_statuses
 
 
 if __name__ == "__main__":

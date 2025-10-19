@@ -68,7 +68,7 @@ def load_templates_from_filesystem() -> List[Dict[str, Any]]:
                             }
                             templates.append(template_info)
             except Exception as e:
-                print(f"Error loading template {filename}: {e}")
+                logger.error(f"Error loading template {filename}: {e}")
                 continue
     
     return sorted(templates, key=lambda x: x["filename"])
@@ -159,4 +159,4 @@ def initialize_templates():
     """Initialize template cache on startup."""
     global _template_cache
     _template_cache = load_templates_from_filesystem()
-    print(f"Templates loaded: {len(_template_cache)}")
+    logger.info(f"Templates loaded: {len(_template_cache)}")

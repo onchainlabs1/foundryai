@@ -181,8 +181,7 @@ class TestComplianceSuiteE2E:
         )
         
         if response.status_code != 200:
-            print(f"Response status: {response.status_code}")
-            print(f"Response body: {response.text}")
+            # Debug logging removed for security
         assert response.status_code == 200
         data = response.json()
         

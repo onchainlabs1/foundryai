@@ -269,7 +269,7 @@ export default function Dashboard() {
         {/* What's blocking go-live? */}
         <Card className="kpi-card">
           <CardHeader>
-            <CardTitle className="text-lg">What's blocking go-live?</CardTitle>
+            <CardTitle className="text-lg">What&apos;s blocking go-live?</CardTitle>
             <CardDescription>Critical issues preventing system deployment</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
