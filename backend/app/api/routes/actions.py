@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
+from typing import Union
 
 from app.core.security import verify_api_key
 from app.database import get_db
@@ -40,7 +41,7 @@ class ActionResponse(BaseModel):
     status: str
     priority: str
     assigned_to: Optional[str]
-    due_date: Optional[str]
+    due_date: Optional[Union[date, str]]
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime]
@@ -156,7 +157,7 @@ async def update_action(
         raise HTTPException(status_code=404, detail="Action not found")
     
     # Update fields
-    update_data = action_data.dict(exclude_unset=True)
+        update_data = action_data.model_dump(exclude_unset=True)
     
     # Handle due_date parsing
     if 'due_date' in update_data and update_data['due_date']:

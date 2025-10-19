@@ -29,6 +29,10 @@ def test_onboarding_to_documents_flow():
     assert response.status_code == 200
     system_id = response.json()["id"]
     
+    # Verify system was created
+    response = client.get(f"/systems/{system_id}", headers=HEADERS)
+    assert response.status_code == 200
+    
     # 2. Save onboarding data for the system
     onboarding_data = {
         "company": {
@@ -49,6 +53,7 @@ def test_onboarding_to_documents_flow():
     # 3. Generate documents
     response = client.post(f"/documents/systems/{system_id}/generate",
                           json=onboarding_data, headers=HEADERS)
+    print(f"Document generation response: {response.status_code} - {response.text}")
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
@@ -81,7 +86,7 @@ def test_annex_iv_export_integrity():
     system_id = response.json()["id"]
     
     # Export Annex IV
-    response = client.get(f"/reports/export/annex-iv/{system_id}.zip", headers=HEADERS)
+    response = client.get(f"/reports/export/annex-iv.zip?system_id={system_id}", headers=HEADERS)
     assert response.status_code == 200
     
     # Check integrity headers

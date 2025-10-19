@@ -323,16 +323,31 @@ async def get_upcoming_deadlines(
 
 
 @router.get("/annex-iv/{system_id}")
-@router.get("/export/annex-iv.zip")  # Alias with .zip extension
 async def get_annex_iv_zip(
-    system_id: int = None,
+    system_id: int,
     org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Generate Annex IV zip file for a system."""
-    if not system_id:
-        raise HTTPException(status_code=400, detail="system_id is required")
-    
+    return await _generate_annex_iv_zip(system_id, org, db)
+
+
+@router.get("/export/annex-iv.zip")
+async def get_annex_iv_zip_alias(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Generate Annex IV zip file for a system (alias with .zip extension)."""
+    return await _generate_annex_iv_zip(system_id, org, db)
+
+
+async def _generate_annex_iv_zip(
+    system_id: int,
+    org: Organization,
+    db: Session,
+):
+    """Internal function to generate Annex IV zip file."""
     system = (
         db.query(AISystem)
         .filter(AISystem.id == system_id, AISystem.org_id == org.id)
@@ -370,10 +385,11 @@ Priority: {control.priority}
 """
             zip_file.writestr(f"controls/{control.id}.txt", control_info)
 
-        # Add evidence
-        evidence = db.query(Evidence).filter(Evidence.system_id == system_id).all()
-        for ev in evidence:
-            evidence_info = f"""Evidence ID: {ev.id}
+        # Add evidence (only if any exists)
+        try:
+            evidence = db.query(Evidence).filter(Evidence.system_id == system_id).all()
+            for ev in evidence:
+                evidence_info = f"""Evidence ID: {ev.id}
 Label: {ev.label}
 Control Name: {ev.control_name}
 ISO Clause: {ev.iso42001_clause}
@@ -386,7 +402,10 @@ Uploaded By: {ev.uploaded_by}
 Reviewer: {ev.reviewer_email}
 Link/Location: {ev.link_or_location}
 """
-            zip_file.writestr(f"evidence/{ev.id}.txt", evidence_info)
+                zip_file.writestr(f"evidence/{ev.id}.txt", evidence_info)
+        except Exception as e:
+            logger.warning(f"Could not fetch evidence for system {system_id}: {e}")
+            # Continue without evidence
 
     zip_buffer.seek(0)
     zip_content = zip_buffer.getvalue()
