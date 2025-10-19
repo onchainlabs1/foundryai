@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
@@ -7,11 +7,38 @@ from datetime import datetime, timedelta, timezone
 from fastapi.responses import StreamingResponse, RedirectResponse
 from io import BytesIO
 import zipfile
+import hashlib
 
 from app.models import AISystem, Organization, Control, Evidence, Incident, Action
 from app.schemas import ReportSummary, ScoreResponse
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+
+@router.get("/deck.pptx")
+async def export_executive_deck(
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Export executive presentation deck (PPTX)."""
+    # TODO: Implement PPTX generation
+    raise HTTPException(
+        status_code=501, 
+        detail="PPTX export not yet implemented. Use individual document downloads instead."
+    )
+
+
+@router.get("/export/pptx")
+async def export_pptx_redirect(
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Redirect to deck.pptx endpoint."""
+    # TODO: Implement PPTX generation
+    raise HTTPException(
+        status_code=501, 
+        detail="PPTX export not yet implemented. Use individual document downloads instead."
+    )
 
 
 @router.get("/summary")
@@ -333,16 +360,32 @@ Priority: {control.priority}
         evidence = db.query(Evidence).filter(Evidence.system_id == system_id).all()
         for ev in evidence:
             evidence_info = f"""Evidence ID: {ev.id}
-Title: {ev.title}
-Type: {ev.template_type}
-Uploaded: {ev.uploaded_at}
-File Size: {ev.file_size} bytes
+Label: {ev.label}
+Control Name: {ev.control_name}
+ISO Clause: {ev.iso42001_clause}
+Uploaded: {ev.upload_date}
+Status: {ev.status}
+File Path: {ev.file_path}
+Version: {ev.version}
+Checksum: {ev.checksum}
+Uploaded By: {ev.uploaded_by}
+Reviewer: {ev.reviewer_email}
+Link/Location: {ev.link_or_location}
 """
             zip_file.writestr(f"evidence/{ev.id}.txt", evidence_info)
 
     zip_buffer.seek(0)
+    zip_content = zip_buffer.getvalue()
+    
+    # Calculate hash for integrity
+    file_hash = hashlib.sha256(zip_content).hexdigest()
+    
     return StreamingResponse(
-        zip_buffer,
+        BytesIO(zip_content),
         media_type="application/zip",
-        headers={"Content-Disposition": f"attachment; filename=annex-iv-system-{system_id}.zip"}
+        headers={
+            "Content-Disposition": f"attachment; filename=annex-iv-system-{system_id}.zip",
+            "X-File-Hash": f"sha256:{file_hash}",
+            "X-File-Size": str(len(zip_content))
+        }
     )
