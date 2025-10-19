@@ -26,6 +26,7 @@ import {
   Settings,
   Zap
 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 import { api } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -51,6 +52,7 @@ interface System {
 
 export default function DocumentsPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [systems, setSystems] = useState<System[]>([])
   const [selectedSystem, setSelectedSystem] = useState<number | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])

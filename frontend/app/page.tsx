@@ -50,6 +50,10 @@ export default function Dashboard() {
           coverageWarnings.push('⚠️ Evidence coverage calculation failed - data may be inaccurate')
         } else if (summaryData.evidence_coverage_status === 'no_controls') {
           coverageWarnings.push('ℹ️ No controls found - evidence coverage cannot be calculated')
+        } else if (summaryData.evidence_coverage_status === 'calculated_legacy') {
+          coverageWarnings.push('⚠️ Evidence coverage using legacy method - may not reflect all evidence')
+        } else if (summaryData.evidence_coverage_status === 'no_evidence') {
+          coverageWarnings.push('ℹ️ No evidence found - upload evidence to improve coverage metrics')
         }
         
         // Validate all data

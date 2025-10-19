@@ -37,14 +37,30 @@ async def get_summary(
             total_controls = controls_result.scalar()
             
             if total_controls > 0:
-                # Count evidence with control_name
+                # Count evidence with control_name (legacy approach)
                 evidence_result = db.execute(
                     text("SELECT COUNT(*) FROM evidence WHERE org_id = :org_id AND control_name IS NOT NULL"), 
                     {"org_id": org.id}
                 )
                 evidence_count = evidence_result.scalar()
-                evidence_coverage_pct = (evidence_count / total_controls) * 100
-                evidence_coverage_status = "calculated"
+                
+                # Count evidence with control_id (preferred approach)
+                evidence_with_id_result = db.execute(
+                    text("SELECT COUNT(*) FROM evidence WHERE org_id = :org_id AND control_id IS NOT NULL"), 
+                    {"org_id": org.id}
+                )
+                evidence_with_id_count = evidence_with_id_result.scalar()
+                
+                # Use the better approach if available
+                if evidence_with_id_count > 0:
+                    evidence_coverage_pct = (evidence_with_id_count / total_controls) * 100
+                    evidence_coverage_status = "calculated_with_id"
+                elif evidence_count > 0:
+                    evidence_coverage_pct = (evidence_count / total_controls) * 100
+                    evidence_coverage_status = "calculated_legacy"
+                else:
+                    evidence_coverage_pct = 0.0
+                    evidence_coverage_status = "no_evidence"
             else:
                 evidence_coverage_status = "no_controls"
                 print("INFO: No controls found for organization - evidence coverage set to 0%")
@@ -53,10 +69,13 @@ async def get_summary(
             print(f"ERROR: Could not calculate evidence coverage: {e}")
             evidence_coverage_pct = 0.0
         
-        # Calculate real metrics
+        # Calculate real metrics - consider both criticality and ai_act_class
         high_risk_systems = db.query(AISystem).filter(
             AISystem.org_id == org.id,
-            AISystem.criticality == 'high'
+            db.or_(
+                AISystem.criticality == 'high',
+                AISystem.ai_act_class == 'high-risk'
+            )
         ).count()
         
         # Count incidents in last 30 days
