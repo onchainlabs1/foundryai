@@ -20,7 +20,7 @@ try:
     WEASYPRINT_AVAILABLE = True
 except (ImportError, OSError) as e:
     WEASYPRINT_AVAILABLE = False
-    print(f"Warning: WeasyPrint not available ({e}). PDF generation will be disabled.")
+    # Note: logger will be configured after import
 
 # For testing fallback behavior, uncomment the line below:
 # WEASYPRINT_AVAILABLE = False
@@ -31,6 +31,10 @@ from sqlalchemy.orm import Session
 
 # Set up logger
 logger = logging.getLogger(__name__)
+
+# Log WeasyPrint availability status
+if not WEASYPRINT_AVAILABLE:
+    logger.warning("WeasyPrint not available. PDF generation will be disabled.")
 
 
 class DocumentGenerator:

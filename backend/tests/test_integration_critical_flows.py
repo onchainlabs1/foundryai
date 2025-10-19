@@ -384,10 +384,11 @@ def test_reports_org_isolation():
     # Test blocking issues
     response = client.get("/reports/blocking-issues", headers=HEADERS)
     assert response.status_code == 200
-    issues = response.json()
+    response_data = response.json()
+    blocking_issues = response_data["blocking_issues"]
     
     # Should only show issues for the authenticated org
-    for issue in issues:
+    for issue in blocking_issues:
         assert "org_id" not in issue or issue.get("org_id") == 1  # Our test org ID
 
 
