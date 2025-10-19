@@ -234,7 +234,7 @@ async def get_blocking_issues(
         # Check for high-risk systems
         high_risk_count = db.query(AISystem).filter(
             AISystem.org_id == org_id,
-            AISystem.ai_act_class == "high"
+            AISystem.ai_act_class == "high-risk"
         ).count()
         
         if high_risk_count > 0:
@@ -299,7 +299,10 @@ async def get_upcoming_deadlines(
         ).all()
         
         for control in controls_due:
-            system = db.query(AISystem).filter(AISystem.id == control.system_id).first()
+            system = db.query(AISystem).filter(
+                AISystem.id == control.system_id,
+                AISystem.org_id == org_id
+            ).first()
             if system:
                 days_until_due = (control.due_date - datetime.now(timezone.utc).date()).days
                 upcoming_deadlines.append({

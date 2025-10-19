@@ -4,14 +4,34 @@ Integration tests for critical flows that must work for release.
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from datetime import datetime, timezone
 
 from app.main import app
-from app.database import get_db, engine, Base
+from app.database import get_db, Base
 from app.models import Organization, AISystem, Action
 
+# Create in-memory SQLite database for tests
+test_engine = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
 # Create test database tables
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=test_engine)
+
+def override_get_db():
+    """Override database dependency for tests."""
+    db = Session(bind=test_engine)
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Override the database dependency
+app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 HEADERS = {"X-API-Key": "dev-aims-demo-key"}
@@ -20,23 +40,22 @@ HEADERS = {"X-API-Key": "dev-aims-demo-key"}
 @pytest.fixture(autouse=True)
 def setup_test_org():
     """Automatically create the demo organization for each test."""
-    from app.database import SessionLocal
-    
-    db = SessionLocal()
+    db = Session(bind=test_engine)
     try:
-        # Check if demo org already exists
-        demo_org = db.query(Organization).filter(
-            Organization.api_key == "dev-aims-demo-key"
-        ).first()
-
-        if not demo_org:
-            demo_org = Organization(
-                name="AIMS Demo Corporation",
-                api_key="dev-aims-demo-key"
-            )
-            db.add(demo_org)
-            db.commit()
-            db.refresh(demo_org)
+        # Clear existing data
+        db.query(Action).delete()
+        db.query(AISystem).delete()
+        db.query(Organization).delete()
+        db.commit()
+        
+        # Create demo org
+        demo_org = Organization(
+            name="AIMS Demo Corporation",
+            api_key="dev-aims-demo-key"
+        )
+        db.add(demo_org)
+        db.commit()
+        db.refresh(demo_org)
     finally:
         db.close()
 
@@ -313,6 +332,101 @@ def test_pdf_fallback_behavior():
         assert response.headers["content-type"] == "application/pdf"
         # Content should be binary PDF
         assert response.content.startswith(b'%PDF')
+
+
+def test_invalid_document_type_validation():
+    """Test that invalid document types are rejected."""
+    # Create a system first
+    system_data = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Test invalid document type in download
+    response = client.get(f"/documents/systems/{system_id}/download/invalid_type", headers=HEADERS)
+    assert response.status_code == 400
+    assert "Invalid document type" in response.json()["detail"]
+    
+    # Test invalid document type in preview
+    response = client.get(f"/documents/systems/{system_id}/preview/invalid_type", headers=HEADERS)
+    assert response.status_code == 400
+    assert "Invalid document type" in response.json()["detail"]
+
+
+def test_reports_org_isolation():
+    """Test that reports only show data from the correct organization."""
+    # Create systems for different orgs (simulated by creating multiple systems)
+    system_data = {
+        "name": "Test System 1",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Test that reports only show data for the authenticated org
+    response = client.get("/reports/summary", headers=HEADERS)
+    assert response.status_code == 200
+    summary = response.json()
+    
+    # Should only show systems for the authenticated org
+    assert summary["systems"] >= 1
+    
+    # Test blocking issues
+    response = client.get("/reports/blocking-issues", headers=HEADERS)
+    assert response.status_code == 200
+    issues = response.json()
+    
+    # Should only show issues for the authenticated org
+    for issue in issues:
+        assert "org_id" not in issue or issue.get("org_id") == 1  # Our test org ID
+
+
+def test_document_generation_security():
+    """Test that document generation doesn't leak sensitive paths."""
+    # Create a system
+    system_data = {
+        "name": "Test System",
+        "purpose": "Testing",
+        "domain": "testing",
+        "ai_act_class": "high-risk"
+    }
+    
+    response = client.post("/systems", json=system_data, headers=HEADERS)
+    assert response.status_code == 200
+    system_id = response.json()["id"]
+    
+    # Generate documents
+    onboarding_data = {
+        "company": {"name": "Test Company"},
+        "systems": [system_data],
+        "risks": [{"type": "bias", "description": "Test risk"}],
+        "oversight": {"human_in_loop": True},
+        "monitoring": {"continuous": True}
+    }
+    
+    response = client.post(f"/documents/systems/{system_id}/generate",
+                          json=onboarding_data, headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Check that response doesn't contain absolute paths
+    response_data = response.json()
+    for doc_type, doc_info in response_data["documents"].items():
+        # Should not contain absolute paths
+        assert "markdown_path" not in doc_info
+        assert "pdf_path" not in doc_info
+        # Should contain availability flags instead
+        assert "markdown_available" in doc_info
+        assert "pdf_available" in doc_info
 
 
 if __name__ == "__main__":

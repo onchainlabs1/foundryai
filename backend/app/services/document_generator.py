@@ -6,6 +6,7 @@ Generates ISO/IEC 42001 and EU AI Act compliance documents from onboarding data.
 import os
 import json
 import hashlib
+import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 from pathlib import Path
@@ -26,6 +27,10 @@ except (ImportError, OSError) as e:
 
 from app.database import get_db
 from app.models import AISystem, Organization, Evidence
+from sqlalchemy.orm import Session
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 class DocumentGenerator:
@@ -37,11 +42,11 @@ class DocumentGenerator:
         self.output_dir = Path(__file__).parent.parent.parent / "generated_documents"
         self.output_dir.mkdir(exist_ok=True)
         
-        # Debug: print the actual path being used
-        print(f"Templates directory: {self.templates_dir}")
-        print(f"Templates directory exists: {self.templates_dir.exists()}")
+        # Debug: log the actual path being used
+        logger.debug(f"Templates directory: {self.templates_dir}")
+        logger.debug(f"Templates directory exists: {self.templates_dir.exists()}")
         if self.templates_dir.exists():
-            print(f"Templates found: {list(self.templates_dir.glob('*.md'))}")
+            logger.debug(f"Templates found: {list(self.templates_dir.glob('*.md'))}")
         
         # Initialize Jinja2 environment
         self.jinja_env = Environment(
@@ -55,14 +60,19 @@ class DocumentGenerator:
         else:
             self.font_config = None
     
-    def generate_all_documents(self, system_id: int, org_id: int, onboarding_data: Dict[str, Any]) -> Dict[str, str]:
+    def generate_all_documents(self, system_id: int, org_id: int, onboarding_data: Dict[str, Any], db: Session = None) -> Dict[str, str]:
         """
         Generate all compliance documents for a system.
         
         Returns:
             Dict mapping document types to file paths
         """
-        db = next(get_db())
+        if db is None:
+            db = next(get_db())
+            should_close = True
+        else:
+            should_close = False
+            
         try:
             system = db.query(AISystem).filter(
                 AISystem.id == system_id,
@@ -117,23 +127,24 @@ class DocumentGenerator:
                         pdf_path = system_dir / f"{doc_type}.pdf"
                         self._generate_pdf(md_content, pdf_path)
                         generated_docs[doc_type] = {
-                            "markdown": str(md_path),
-                            "pdf": str(pdf_path)
+                            "markdown_available": True,
+                            "pdf_available": True
                         }
                     else:
                         generated_docs[doc_type] = {
-                            "markdown": str(md_path),
-                            "pdf": None
+                            "markdown_available": True,
+                            "pdf_available": False
                         }
                     
                 except Exception as e:
-                    print(f"Error generating {doc_type}: {e}")
+                    logger.error(f"Error generating {doc_type}: {e}")
                     continue
             
             return generated_docs
             
         finally:
-            db.close()
+            if should_close:
+                db.close()
     
     def _generate_document(self, template_file: str, system: AISystem, org: Organization, 
                           onboarding_data: Dict[str, Any]) -> str:
@@ -306,7 +317,7 @@ class DocumentGenerator:
                 doc_info = {
                     "type": doc_type,
                     "name": doc_name,
-                    "markdown_path": str(md_path),
+                    "markdown_available": True,
                     "markdown_size": md_stat.st_size,
                     "created_at": datetime.fromtimestamp(md_stat.st_ctime, tz=timezone.utc).isoformat(),
                     "updated_at": datetime.fromtimestamp(md_stat.st_mtime, tz=timezone.utc).isoformat()
@@ -316,11 +327,11 @@ class DocumentGenerator:
                 if pdf_path.exists():
                     pdf_stat = pdf_path.stat()
                     doc_info.update({
-                        "pdf_path": str(pdf_path),
+                        "pdf_available": True,
                         "pdf_size": pdf_stat.st_size
                     })
                 else:
-                    doc_info["pdf_path"] = None
+                    doc_info["pdf_available"] = False
                     doc_info["pdf_size"] = None
                 
                 documents.append(doc_info)

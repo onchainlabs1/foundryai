@@ -15,6 +15,21 @@ from app.services.document_generator import DocumentGenerator
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
+# Valid document types whitelist
+VALID_DOCUMENT_TYPES = {
+    "risk_assessment",
+    "impact_assessment", 
+    "model_card",
+    "data_sheet",
+    "logging_plan",
+    "monitoring_report",
+    "human_oversight",
+    "appeals_flow",
+    "soa",
+    "policy_register",
+    "audit_log"
+}
+
 
 @router.post("/systems/{system_id}/generate")
 async def generate_system_documents(
@@ -77,7 +92,8 @@ async def generate_system_documents(
         generated_docs = generator.generate_all_documents(
             system_id=system_id,
             org_id=org.id,
-            onboarding_data=onboarding_data
+            onboarding_data=onboarding_data,
+            db=db
         )
         
         return {
@@ -131,6 +147,10 @@ async def download_document(
     db: Session = Depends(get_db),
 ):
     """Download a specific document for a system."""
+    
+    # Validate document type
+    if doc_type not in VALID_DOCUMENT_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid document type: {doc_type}")
     
     # Verify system exists and belongs to organization
     system = db.query(AISystem).filter(
@@ -192,6 +212,10 @@ async def preview_document(
 ):
     """Preview a document as HTML."""
     
+    # Validate document type
+    if doc_type not in VALID_DOCUMENT_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid document type: {doc_type}")
+    
     # Verify system exists and belongs to organization
     system = db.query(AISystem).filter(
         AISystem.id == system_id,
@@ -209,6 +233,10 @@ async def preview_document(
             doc_type=doc_type,
             format="markdown"
         )
+        
+        # Validate format before processing
+        if actual_format != "markdown":
+            raise HTTPException(status_code=500, detail=f"Preview only supports markdown format, got: {actual_format}")
         
         # Convert markdown to HTML
         import markdown
