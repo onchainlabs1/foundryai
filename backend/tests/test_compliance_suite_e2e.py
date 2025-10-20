@@ -4,8 +4,11 @@ Tests document generation, citation enforcement, coverage validation, and export
 """
 import json
 import pytest
+import logging
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.main import app
 from app.database import SessionLocal, engine, Base
@@ -182,6 +185,7 @@ class TestComplianceSuiteE2E:
         
         if response.status_code != 200:
             # Debug logging removed for security
+            logger.error(f"Compliance suite test failed with status {response.status_code}")
         assert response.status_code == 200
         data = response.json()
         

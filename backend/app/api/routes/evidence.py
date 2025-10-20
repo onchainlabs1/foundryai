@@ -8,7 +8,7 @@ from app.core.security import verify_api_key
 from app.database import get_db
 from app.models import AISystem, Evidence, Organization
 from app.schemas import EvidenceResponse
-from app.services.evidence import save_evidence_file
+from app.services.evidence import save_evidence_file_streaming
 from app.services.text_extraction import ingest_evidence_text
 
 router = APIRouter(prefix="/evidence", tags=["evidence"])
@@ -98,25 +98,39 @@ async def upload_evidence(
             'text/csv'
         }
         
-        # Check file size
-        file_content = await file.read()
-        if len(file_content) > MAX_FILE_SIZE:
-            logger.warning(f"File upload rejected: size {len(file_content)} exceeds limit {MAX_FILE_SIZE}")
-            raise HTTPException(status_code=413, detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB")
-        
-        # Check MIME type
+        # Check MIME type first (before reading file)
         if file.content_type not in ALLOWED_MIME_TYPES:
             logger.warning(f"File upload rejected: invalid MIME type {file.content_type}")
             raise HTTPException(status_code=415, detail=f"File type not allowed. Allowed types: {', '.join(ALLOWED_MIME_TYPES)}")
         
+        # Stream file content to check size and save
+        file_size = 0
+        chunk_size = 8192  # 8KB chunks
+        file_chunks = []
+        
+        # Read file in chunks to check size
+        while True:
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            
+            file_size += len(chunk)
+            if file_size > MAX_FILE_SIZE:
+                logger.warning(f"File upload rejected: size {file_size} exceeds limit {MAX_FILE_SIZE}")
+                raise HTTPException(status_code=413, detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB")
+            
+            file_chunks.append(chunk)
+        
         # Reset file pointer for processing
         await file.seek(0)
-        # Traditional file upload
+        
         if not label:
             label = file.filename or "Uploaded Evidence"
         
-        # Save file and get checksum
-        file_path, checksum = await save_evidence_file(file, org.id, system_id)
+        # Save file using streaming and get checksum
+        file_path, checksum = await save_evidence_file_streaming(
+            file_chunks, file.filename, org.id, system_id, file_size
+        )
         
     elif content:
         # Markdown content upload

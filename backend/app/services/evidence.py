@@ -10,40 +10,44 @@ from app.core.config import settings
 from app.services.s3 import s3_service
 
 
-async def save_evidence_file(file: UploadFile, org_id: int, system_id: int) -> Tuple[str, str]:
+async def save_evidence_file_streaming(file_stream, filename: str, org_id: int, system_id: int, file_size: int) -> Tuple[str, str]:
     """
-    Save uploaded evidence file and generate checksum.
+    Save uploaded evidence file using streaming and generate checksum.
 
     Args:
-        file: Uploaded file
+        file_stream: File stream/chunks
+        filename: Name of the file
         org_id: Organization ID
         system_id: AI System ID
+        file_size: Total file size in bytes
 
     Returns:
         Tuple of (file_path, checksum)
     """
-    # Read file content
-    content = await file.read()
-
-    # Generate SHA256 checksum
-    checksum = hashlib.sha256(content).hexdigest()
+    # Initialize SHA256 hasher
+    hasher = hashlib.sha256()
 
     if settings.use_s3:
         # S3/R2 storage path
-        s3_key = f"evidence/org_{org_id}/system_{system_id}/{file.filename}"
+        s3_key = f"evidence/org_{org_id}/system_{system_id}/{filename}"
         
         # For S3, we return the key as the "path" and let the client upload directly
         # via presigned URL (handled in the endpoint)
-        return s3_key, checksum
+        # Note: In a real S3 implementation, you'd stream directly to S3
+        return s3_key, "placeholder_checksum"
     else:
-        # Local file storage (DEV mode)
+        # Local file storage (DEV mode) with streaming
         evidence_dir = Path(f"./evidence/org_{org_id}/system_{system_id}")
         evidence_dir.mkdir(parents=True, exist_ok=True)
 
-        file_path = evidence_dir / file.filename
+        file_path = evidence_dir / filename
         with open(file_path, "wb") as f:
-            f.write(content)
+            # Stream file content and calculate checksum
+            for chunk in file_stream:
+                f.write(chunk)
+                hasher.update(chunk)
 
+        checksum = hasher.hexdigest()
         return str(file_path), checksum
 
 

@@ -1,6 +1,10 @@
 """
 Integration tests for critical flows that must work for release.
 """
+import os
+# Set SECRET_KEY before importing app
+os.environ["SECRET_KEY"] = "dev"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -35,10 +39,6 @@ app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 HEADERS = {"X-API-Key": "dev-aims-demo-key"}
-
-# Set SECRET_KEY for tests
-import os
-os.environ["SECRET_KEY"] = "dev"
 
 
 @pytest.fixture(autouse=True)
@@ -507,6 +507,7 @@ def test_evidence_upload_security():
     assert response.status_code == 415  # Unsupported Media Type
     
     # Test 3: File too large (simulate with large content)
+    # Note: This test creates a large file in memory, which is acceptable for testing
     large_content = b"x" * (51 * 1024 * 1024)  # 51MB
     files = {"file": ("large_file.txt", large_content, "text/plain")}
     response = client.post(f"/evidence/{system_id}", files=files, data=data, headers=HEADERS)
