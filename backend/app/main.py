@@ -1,4 +1,5 @@
 import uuid
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
@@ -17,6 +18,9 @@ from app.services.s3 import s3_service
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
+    # Configure logging
+    logger = logging.getLogger(__name__)
+    
     # Validate critical configuration
     if settings.SECRET_KEY == "change_me" or len(settings.SECRET_KEY) < 16:
         raise ValueError(

@@ -3,6 +3,7 @@ Templates API endpoints for ISO/IEC 42001 templates.
 """
 import os
 import yaml
+import logging
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
@@ -157,6 +158,7 @@ async def get_template_content(
 
 def initialize_templates():
     """Initialize template cache on startup."""
+    logger = logging.getLogger(__name__)
     global _template_cache
     _template_cache = load_templates_from_filesystem()
     logger.info(f"Templates loaded: {len(_template_cache)}")
