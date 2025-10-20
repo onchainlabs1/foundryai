@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str  # Required: Set via environment variable
-    FRONTEND_ORIGIN: str = "http://localhost:3001"
+    FRONTEND_ORIGIN: str = "http://localhost:3000"
     
     # Organization seeding
     ORG_NAME: Optional[str] = None

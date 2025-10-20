@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://foundryai.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 function getApiKey(): string | null {
   if (typeof window === 'undefined') return null;

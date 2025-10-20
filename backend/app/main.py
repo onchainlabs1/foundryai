@@ -90,7 +90,7 @@ app = FastAPI(
 # CORS - restrict to frontend origin in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN] if settings.FRONTEND_ORIGIN != "http://localhost:3001" else ["*"],
+    allow_origins=["http://localhost:3000", settings.FRONTEND_ORIGIN],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
