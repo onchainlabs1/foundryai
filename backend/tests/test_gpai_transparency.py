@@ -130,8 +130,13 @@ def test_gpai_system_generates_transparency_notice(db_session):
     print("=" * 60)
 
 
-def test_non_gpai_system_no_transparency_notice(db_session):
+def test_non_gpai_system_no_transparency_notice(db_session, tmp_path, monkeypatch):
     """Test that non-GPAI systems do NOT generate transparency notice."""
+    
+    # Use temporary directory to avoid cross-test pollution
+    from app.services.document_generator import DocumentGenerator
+    test_output_dir = tmp_path / "test_documents"
+    test_output_dir.mkdir()
     
     org = Organization(
         name="NonGPAI Test Corp",
@@ -156,8 +161,10 @@ def test_non_gpai_system_no_transparency_notice(db_session):
     db_session.add(non_gpai_system)
     db_session.commit()
     
-    # Generate documents
+    # Generate documents with custom output directory
     generator = DocumentGenerator()
+    monkeypatch.setattr(generator, 'output_dir', test_output_dir)
+    
     result = generator.generate_all_documents(
         system_id=non_gpai_system.id,
         org_id=org.id,
@@ -172,9 +179,8 @@ def test_non_gpai_system_no_transparency_notice(db_session):
     assert "transparency_notice_gpai" not in result
     print("✅ TEST PASSED: Non-GPAI system does not generate transparency notice in result")
     
-    # Verify file doesn't exist in system-specific directory
-    output_dir = Path(__file__).parent.parent / "generated_documents"
-    system_dir = output_dir / f"org_{org.id}" / f"system_{non_gpai_system.id}"
+    # Verify file doesn't exist in test output directory
+    system_dir = test_output_dir / f"org_{org.id}" / f"system_{non_gpai_system.id}"
     
     if system_dir.exists():
         notice_path = system_dir / "transparency_notice_gpai.md"

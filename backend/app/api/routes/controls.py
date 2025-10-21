@@ -56,6 +56,9 @@ def bulk_upsert_controls(
         ctrl.due_date = datetime.fromisoformat(due).date() if isinstance(due, str) and due else (due if hasattr(due, 'date') else None)
         ctrl.updated_at = datetime.now(timezone.utc)
         
+        # Flush to ensure ctrl.id is set before evidence linking
+        db.flush()
+        
         # Handle evidence linking
         evidence_ids = item_dict.get("evidence_ids", [])
         if evidence_ids:

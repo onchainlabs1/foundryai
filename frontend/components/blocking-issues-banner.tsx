@@ -41,7 +41,7 @@ export function BlockingIssuesBanner({ systemId, onIssuesChange }: BlockingIssue
 
   const loadBlockingIssues = async () => {
     try {
-      const data = await api.getBlockingIssues(systemId)
+      const data = await api.getSystemBlockingIssues(systemId)
       setSummary(data)
       onIssuesChange?.(data.total_issues > 0)
     } catch (error) {

@@ -221,12 +221,12 @@ async def get_score(
         }
 
 
-@router.get("/blocking-issues")
-async def get_blocking_issues(
+@router.get("/blocking-issues/org")
+async def get_org_blocking_issues(
     org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
-    """Get real blocking issues preventing system deployment."""
+    """Get organization-wide blocking issues preventing system deployment."""
     try:
         org_id = org.id
         blocking_issues = []
@@ -325,13 +325,13 @@ async def get_upcoming_deadlines(
         return {"upcoming_deadlines": []}
 
 
-@router.get("/blocking-issues")
-async def get_blocking_issues(
+@router.get("/blocking-issues/system")
+async def get_system_blocking_issues(
     system_id: int,
     org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
-    """Get blocking issues for a system."""
+    """Get blocking issues for a specific system."""
     service = BlockingIssuesService(db)
     return service.get_issue_summary(system_id, org.id)
 
@@ -434,6 +434,7 @@ Priority: {control.priority}
             })
 
         # Add evidence (only if any exists)
+        evidence = []  # Initialize to avoid undefined variable
         try:
             evidence = db.query(Evidence).filter(Evidence.system_id == system_id).all()
             for ev in evidence:
@@ -458,7 +459,7 @@ Link/Location: {ev.link_or_location}
                 })
         except Exception as e:
             logger.warning(f"Could not fetch evidence for system {system_id}: {e}")
-            # Continue without evidence
+            evidence = []  # Ensure evidence is empty list on error
         
         # Generate manifest.json
         manifest = {
