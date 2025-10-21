@@ -13,7 +13,6 @@ All paragraphs must be evidence-grounded with citations.
 
 import hashlib
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -23,8 +22,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import (
-    AISystem, ArtifactText, Control, Evidence, FRIA, Incident, 
-    Organization, SoAItem
+    AISystem,
+    Organization,
 )
 
 
@@ -299,8 +298,9 @@ Generated: {timestamp}
         section_key: str
     ) -> List[Dict]:
         """Search for evidence snippets matching the section key using ArtifactText."""
-        from app.services.text_extraction import search_artifact_text
         import re
+
+        from app.services.text_extraction import search_artifact_text
         
         # Extract meaningful keywords from section_key
         # e.g., "section_2_1_architecture" → "architecture"
@@ -515,7 +515,7 @@ Generated: {timestamp}
         """Convert markdown content to PDF format."""
         try:
             import markdown
-            from weasyprint import HTML, CSS
+            from weasyprint import CSS, HTML
             
             if not settings.ENABLE_PDF_EXPORT:
                 raise ValueError("PDF export is disabled")

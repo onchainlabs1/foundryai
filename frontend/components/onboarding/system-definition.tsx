@@ -102,7 +102,7 @@ export default function SystemDefinition({ data, onUpdate }: SystemDefinitionPro
   } = useForm<SystemsFormData>({
     resolver: zodResolver(systemsSchema),
     defaultValues: {
-      systems: data && data.length > 0 ? data : [{
+      systems: data && data.length > 0 && data[0].name ? data : [{
         name: '',
         purpose: '',
         domain: '',
@@ -128,6 +128,12 @@ export default function SystemDefinition({ data, onUpdate }: SystemDefinitionPro
   const onSubmit = async (formData: SystemsFormData) => {
     setIsSubmitting(true)
     try {
+      console.log('✅ SystemDefinition onSubmit called')
+      console.log('Form data:', formData)
+      console.log('Systems count:', formData.systems.length)
+      console.log('Systems:', formData.systems)
+      
+      // Pass systems directly (not wrapped in object)
       onUpdate({ systems: formData.systems })
     } finally {
       setIsSubmitting(false)
@@ -553,7 +559,7 @@ export default function SystemDefinition({ data, onUpdate }: SystemDefinitionPro
         >
           <Button
             type="submit"
-            disabled={!isValid || isSubmitting}
+            disabled={isSubmitting}
             variant="default"
             size="lg"
             className="min-w-[200px]"

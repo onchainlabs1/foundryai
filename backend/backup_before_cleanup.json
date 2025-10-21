@@ -1,0 +1,126 @@
+{
+  "timestamp": "2025-10-21T11:40:00.892897",
+  "organizations": [
+    {
+      "id": 1,
+      "name": "Test Org",
+      "api_key": "test-key-utc-3585b7c1"
+    },
+    {
+      "id": 2,
+      "name": "Test Org",
+      "api_key": "test-key-utc-d70bea51"
+    },
+    {
+      "id": 3,
+      "name": "Test Org",
+      "api_key": "test-key-utc-0a43238c"
+    },
+    {
+      "id": 4,
+      "name": "Test Org",
+      "api_key": "test-key-utc-30f8adaf"
+    },
+    {
+      "id": 5,
+      "name": "Test Org",
+      "api_key": "test-key-utc-4deecb42"
+    },
+    {
+      "id": 6,
+      "name": "Test Org",
+      "api_key": "test-key-utc"
+    },
+    {
+      "id": 7,
+      "name": "On-Chain Labs Governance",
+      "api_key": "dev-aims-demo-key"
+    }
+  ],
+  "systems": [
+    {
+      "id": 1,
+      "org_id": 2,
+      "name": "Test System",
+      "purpose": "Testing UTC timezone"
+    },
+    {
+      "id": 2,
+      "org_id": 3,
+      "name": "Test System",
+      "purpose": "Testing UTC timezone"
+    },
+    {
+      "id": 3,
+      "org_id": 4,
+      "name": "Test System",
+      "purpose": "Testing UTC timezone"
+    },
+    {
+      "id": 4,
+      "org_id": 5,
+      "name": "Test System",
+      "purpose": "Testing UTC timezone"
+    },
+    {
+      "id": 5,
+      "org_id": 7,
+      "name": "Test System",
+      "purpose": "Testing doc generation"
+    },
+    {
+      "id": 6,
+      "org_id": 7,
+      "name": "Teste Frontend",
+      "purpose": "Teste do frontend"
+    },
+    {
+      "id": 7,
+      "org_id": 7,
+      "name": "Teste Novo Sistema",
+      "purpose": "Teste de cria\u00e7\u00e3o"
+    },
+    {
+      "id": 8,
+      "org_id": 7,
+      "name": "Sistema Teste Frontend",
+      "purpose": "Teste de cria\u00e7\u00e3o via frontend"
+    },
+    {
+      "id": 9,
+      "org_id": 7,
+      "name": "Sistema Teste Completo",
+      "purpose": "Teste com todos os campos"
+    },
+    {
+      "id": 10,
+      "org_id": 7,
+      "name": "Sistema Final Teste",
+      "purpose": "Teste final com todos os campos"
+    },
+    {
+      "id": 11,
+      "org_id": 7,
+      "name": "Teste Direto Banco",
+      "purpose": "Teste direto no banco"
+    },
+    {
+      "id": 12,
+      "org_id": 7,
+      "name": "Sistema Teste Final",
+      "purpose": "Teste final do endpoint"
+    },
+    {
+      "id": 13,
+      "org_id": 7,
+      "name": "Teste Endpoint Logic",
+      "purpose": "Teste da l\u00f3gica do endpoint"
+    },
+    {
+      "id": 14,
+      "org_id": 7,
+      "name": "Sistema Frontend Teste",
+      "purpose": "Teste do frontend com todos os campos"
+    }
+  ]
+}

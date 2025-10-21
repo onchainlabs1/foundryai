@@ -17,7 +17,8 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  RotateCcw
 } from 'lucide-react'
 
 export default function Dashboard() {
@@ -28,6 +29,25 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [dataErrors, setDataErrors] = useState<string[]>([])
   const [dataValidation, setDataValidation] = useState<any>(null)
+
+  const resetAllData = () => {
+    if (confirm('Are you sure you want to reset all data? This will clear all onboarding data and system information.')) {
+      // Clear localStorage
+      localStorage.removeItem('onboarding-draft')
+      localStorage.removeItem('system-id-mapping')
+      
+      // Clear any other potential keys
+      const keys = Object.keys(localStorage)
+      keys.forEach(key => {
+        if (key.includes('onboarding') || key.includes('aims')) {
+          localStorage.removeItem(key)
+        }
+      })
+      
+      // Reload the page
+      window.location.reload()
+    }
+  }
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -112,27 +132,38 @@ export default function Dashboard() {
                   <h1 className="text-3xl font-bold text-foreground">Compliance at a glance</h1>
                   <p className="text-muted-foreground">Monitor your AI governance across all systems</p>
                 </div>
-                {dataValidation && (
-                  <div className="flex items-center gap-2">
-                    <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
-                      dataValidation.confidence === 'high' 
-                        ? 'bg-green-100 text-green-700' 
-                        : dataValidation.confidence === 'medium'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {dataValidation.confidence === 'high' ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4" />
-                      )}
-                      {getDataConfidenceIndicator(dataValidation.confidence).text}
+                <div className="flex items-center gap-4">
+                  {dataValidation && (
+                    <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
+                        dataValidation.confidence === 'high' 
+                          ? 'bg-green-100 text-green-700' 
+                          : dataValidation.confidence === 'medium'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {dataValidation.confidence === 'high' ? (
+                          <CheckCircle className="w-4 h-4" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4" />
+                        )}
+                        {getDataConfidenceIndicator(dataValidation.confidence).text}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Last updated: {new Date(dataValidation.lastUpdated).toLocaleTimeString()}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Last updated: {new Date(dataValidation.lastUpdated).toLocaleTimeString()}
-                    </div>
-                  </div>
-                )}
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={resetAllData}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Reset Data
+                  </Button>
+                </div>
               </div>
             </div>
 

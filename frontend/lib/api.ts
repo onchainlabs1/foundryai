@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
 function getApiKey(): string | null {
   if (typeof window === 'undefined') return null;
@@ -251,6 +251,49 @@ export const api = {
     
     return response.text();
   },
+  
+  // Audit-grade onboarding endpoints
+  setupOrganization: (data: any) =>
+    apiRequest('/onboarding/org/setup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  createRisksBulk: (systemId: number, risks: any[]) =>
+    apiRequest(`/onboarding/systems/${systemId}/risks/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ risks }),
+    }),
+  
+  getRisks: (systemId: number) =>
+    apiRequest(`/onboarding/systems/${systemId}/risks`),
+  
+  createControlsBulk: (controls: any[]) =>
+    apiRequest('/onboarding/controls/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ controls }),
+    }),
+  
+  createOversight: (systemId: number, data: any) =>
+    apiRequest(`/onboarding/systems/${systemId}/oversight`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  getOversight: (systemId: number) =>
+    apiRequest(`/onboarding/systems/${systemId}/oversight`),
+  
+  createPMM: (systemId: number, data: any) =>
+    apiRequest(`/onboarding/systems/${systemId}/pmm`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  getPMM: (systemId: number) =>
+    apiRequest(`/onboarding/systems/${systemId}/pmm`),
+  
+  exportSoA: (systemId: number) =>
+    `${API_URL}/systems/${systemId}/soa.csv?x-api-key=${getApiKey()}`,
 };
 
 export function setApiKey(key: string) {

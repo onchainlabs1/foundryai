@@ -3,11 +3,10 @@ Pytest configuration and shared fixtures for all tests.
 """
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.database import Base
 from app.models import Organization
-
 
 # Use in-memory SQLite for faster tests
 TEST_DATABASE_URL = "sqlite:///:memory:"

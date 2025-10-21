@@ -3,9 +3,9 @@ Compliance Suite API Routes - Template-based document generation endpoints.
 """
 
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -14,8 +14,10 @@ from app.core.security import verify_api_key
 from app.database import get_db
 from app.models import Organization
 from app.schemas import (
-    ComplianceDraftRequest, ComplianceDraftResponse,
-    DocumentSection, EvidenceCitation, RefineRequest, RefineResponse
+    ComplianceDraftRequest,
+    ComplianceDraftResponse,
+    RefineRequest,
+    RefineResponse,
 )
 from app.services.compliance_suite import compliance_suite_service
 from app.services.s3 import s3_service

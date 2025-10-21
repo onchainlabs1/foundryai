@@ -22,7 +22,12 @@ const companySchema = z.object({
   primaryContactEmail: z.string().email('Valid email is required'),
   organizationSize: z.string().min(1, 'Organization size is required'),
   hasGovernancePolicy: z.boolean(),
-  keyStakeholders: z.string().optional()
+  keyStakeholders: z.string().optional(),
+  // New audit-grade fields
+  primaryContactName: z.string().optional(),
+  dpoContactName: z.string().optional(),
+  dpoContactEmail: z.string().email('Valid email required').optional().or(z.literal('')),
+  orgRole: z.enum(['provider', 'deployer', 'both']).optional()
 })
 
 type CompanyFormData = z.infer<typeof companySchema>
@@ -79,14 +84,18 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
       primaryContactEmail: data?.primaryContactEmail || '',
       organizationSize: data?.organizationSize || '',
       hasGovernancePolicy: data?.hasGovernancePolicy || false,
-      keyStakeholders: data?.keyStakeholders || ''
+      keyStakeholders: data?.keyStakeholders || '',
+      primaryContactName: data?.primaryContactName || '',
+      dpoContactName: data?.dpoContactName || '',
+      dpoContactEmail: data?.dpoContactEmail || '',
+      orgRole: data?.orgRole || undefined
     }
   })
 
   const hasGovernancePolicy = watch('hasGovernancePolicy')
   const watchedValues = watch()
 
-  // Manual validation for button state
+  // Manual validation for button state - only required fields
   const isFormValid = 
     watchedValues.companyName?.trim() &&
     watchedValues.sector &&
@@ -246,6 +255,25 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
                 )}
               </motion.div>
 
+              {/* Primary Contact Name */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.65 }}
+                className="space-y-3"
+              >
+                <Label htmlFor="primaryContactName" className="flex items-center gap-2 text-sm font-semibold">
+                  <Users className="w-4 h-4 text-primary" />
+                  Primary Contact Name
+                </Label>
+                <Input
+                  id="primaryContactName"
+                  {...register('primaryContactName')}
+                  placeholder="John Doe"
+                  className="h-12 bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-300"
+                />
+              </motion.div>
+
               {/* Organization Size */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -273,6 +301,77 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
                     {errors.organizationSize.message}
                   </p>
                 )}
+              </motion.div>
+
+              {/* DPO Contact Name */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.75 }}
+                className="space-y-3"
+              >
+                <Label htmlFor="dpoContactName" className="flex items-center gap-2 text-sm font-semibold">
+                  <Shield className="w-4 h-4 text-primary" />
+                  DPO / Legal Contact Name
+                </Label>
+                <Input
+                  id="dpoContactName"
+                  {...register('dpoContactName')}
+                  placeholder="Jane Smith (optional)"
+                  className="h-12 bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-300"
+                />
+              </motion.div>
+
+              {/* DPO Contact Email */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.8 }}
+                className="space-y-3"
+              >
+                <Label htmlFor="dpoContactEmail" className="flex items-center gap-2 text-sm font-semibold">
+                  <Mail className="w-4 h-4 text-primary" />
+                  DPO / Legal Contact Email
+                </Label>
+                <Input
+                  id="dpoContactEmail"
+                  type="email"
+                  {...register('dpoContactEmail')}
+                  placeholder="dpo@company.com (optional)"
+                  className="h-12 bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-300"
+                />
+                {errors.dpoContactEmail && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-destructive"></span>
+                    {errors.dpoContactEmail.message}
+                  </p>
+                )}
+              </motion.div>
+
+              {/* Organization Role */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.85 }}
+                className="space-y-3"
+              >
+                <Label htmlFor="orgRole" className="flex items-center gap-2 text-sm font-semibold">
+                  <Building2 className="w-4 h-4 text-primary" />
+                  Organization Role (EU AI Act)
+                </Label>
+                <Select onValueChange={(value) => setValue('orgRole', value as any)} defaultValue={data?.orgRole}>
+                  <SelectTrigger className="h-12 bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-300">
+                    <SelectValue placeholder="Select your role (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="provider">AI Provider (develop/distribute AI systems)</SelectItem>
+                    <SelectItem value="deployer">AI Deployer (use AI systems)</SelectItem>
+                    <SelectItem value="both">Both Provider and Deployer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Defines compliance obligations under EU AI Act
+                </p>
               </motion.div>
 
               {/* AI Governance Policy */}

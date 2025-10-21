@@ -41,15 +41,23 @@ export default function OnboardingSummary({ data, onRestart }: OnboardingSummary
       const reports = []
       const systemsWithoutIds = []
       
+      // Debug: Log all systems and their IDs
+      console.log('=== Generating Documents ===')
+      console.log('Total systems:', data.systems?.length || 0)
+      console.log('Systems data:', JSON.stringify(data.systems, null, 2))
+      
       // Generate compliance documents for each system
       if (data.systems && data.systems.length > 0) {
         for (const system of data.systems) {
           // Ensure we have a valid system ID
           if (!system.id) {
-            console.warn(`System ${system.name} has no ID`)
+            console.error(`❌ System ${system.name} has no ID`)
+            console.error('System object:', system)
             systemsWithoutIds.push(system.name)
             continue
           }
+          
+          console.log(`✅ System ${system.name} has ID: ${system.id}`)
           
           // Generate all compliance documents with real onboarding data
           try {

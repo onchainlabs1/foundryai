@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class AISystemBase(BaseModel):
@@ -18,10 +18,23 @@ class AISystemBase(BaseModel):
     deployment_context: Optional[str] = None
     criticality: Optional[str] = None
     notes: Optional[str] = None
+    # Additional fields from frontend
+    lifecycle_stage: Optional[str] = None
+    affected_users: Optional[str] = None
+    third_party_providers: Optional[str] = None
+    risk_category: Optional[str] = None
+    # New audit-grade fields
+    system_role: Optional[str] = None
+    processes_sensitive_data: bool = False
+    uses_gpai: bool = False
+    biometrics_in_public: bool = False
+    annex3_categories: Optional[str] = None
+    impacted_groups: Optional[str] = None
+    requires_fria: bool = False
 
 
 class AISystemCreate(AISystemBase):
-    pass
+    model_config = ConfigDict(extra='ignore')  # Ignore extra fields from frontend
 
 
 class AISystemResponse(AISystemBase):

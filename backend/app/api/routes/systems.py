@@ -1,14 +1,14 @@
 import csv
 import io
-from typing import List
 from datetime import datetime, timezone
+from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Response
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import AISystem, Organization, Control
+from app.models import AISystem, Control, Evidence, Organization
 from app.schemas import AISystemCreate, AISystemResponse, AssessmentResponse
 from app.services.gap import generate_control_plan, generate_gap
 from app.services.risk import classify_ai_act, detect_role, is_gpai
@@ -63,12 +63,24 @@ async def patch_system(
         'name', 'purpose', 'domain', 'owner_email', 'uses_biometrics',
         'is_general_purpose_ai', 'impacts_fundamental_rights', 'personal_data_processed',
         'training_data_sensitivity', 'output_type', 'deployment_context',
-        'criticality', 'notes'
+        'criticality', 'notes', 'lifecycle_stage', 'affected_users',
+        'third_party_providers', 'risk_category', 'system_role',
+        'processes_sensitive_data', 'uses_gpai', 'biometrics_in_public',
+        'annex3_categories', 'impacted_groups'
     }
     
     for field, value in system_updates.items():
         if field in allowed_fields and hasattr(existing_system, field):
             setattr(existing_system, field, value)
+    
+    # Recompute requires_fria if relevant fields changed
+    if any(field in system_updates for field in ['impacts_fundamental_rights', 'biometrics_in_public', 'annex3_categories']):
+        from app.services.fria_logic import compute_requires_fria
+        existing_system.requires_fria = compute_requires_fria(
+            impacts_fundamental_rights=existing_system.impacts_fundamental_rights or False,
+            biometrics_in_public=existing_system.biometrics_in_public or False,
+            annex3_categories=existing_system.annex3_categories
+        )
     
     db.commit()
     db.refresh(existing_system)
@@ -103,15 +115,31 @@ async def update_system(
 @router.post("", response_model=AISystemResponse)
 async def create_system(
     system: AISystemCreate,
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Create a new AI system."""
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
     db_system = AISystem(**system.model_dump(), org_id=org.id)
 
     # Auto-classify AI Act
     system_dict = system.model_dump()
     db_system.ai_act_class = classify_ai_act(system_dict)
+    
+    # Auto-compute requires_fria
+    from app.services.fria_logic import compute_requires_fria
+    db_system.requires_fria = compute_requires_fria(
+        impacts_fundamental_rights=db_system.impacts_fundamental_rights or False,
+        biometrics_in_public=db_system.biometrics_in_public or False,
+        annex3_categories=db_system.annex3_categories
+    )
 
     db.add(db_system)
     db.commit()
@@ -225,12 +253,21 @@ def list_controls(
 async def save_onboarding_data(
     system_id: int,
     onboarding_data: dict,
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Save onboarding data for a system."""
-    from app.models import OnboardingData
     import json
+
+    from app.models import OnboardingData
+    
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Check if system exists and belongs to org
     system = db.query(AISystem).filter(
@@ -270,8 +307,9 @@ async def get_onboarding_data(
     db: Session = Depends(get_db),
 ):
     """Get onboarding data for a system."""
-    from app.models import OnboardingData
     import json
+
+    from app.models import OnboardingData
     
     # Check if system exists and belongs to org
     system = db.query(AISystem).filter(
@@ -299,17 +337,53 @@ async def get_onboarding_data(
 
 @router.get("/{system_id}/soa.csv")
 def export_soa_csv(system_id: int, org: Organization = Depends(verify_api_key), db: Session = Depends(get_db)):
+    """Export Statement of Applicability as CSV with full audit trail."""
+    from app.models import Evidence
+    
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["iso_clause", "applicable", "justification"])
-    # MVP: applicable if there is at least one control mapped to clause; justification from rationale
+    
+    # Enhanced header with all audit-grade columns
+    writer.writerow([
+        "ISO/IEC 42001 Clause",
+        "Control Name",
+        "Applicable",
+        "Justification/Rationale",
+        "Owner Email",
+        "Implementation Status",
+        "Due Date",
+        "Evidence Links"
+    ])
+    
+    # Get all controls for this system
     items = (
         db.query(Control)
         .filter(Control.system_id == system_id, Control.org_id == org.id)
         .order_by(Control.iso_clause)
         .all()
     )
-    for c in items:
-        writer.writerow([c.iso_clause or "", True, c.rationale or ""])
+    # Write control rows with evidence
+    for control in items:
+        # Get evidence for this control
+        evidence_list = db.query(Evidence).filter(
+            Evidence.control_id == control.id,
+            Evidence.org_id == org.id
+        ).all()
+        
+        evidence_links = ", ".join([
+            f"{e.label} (v{e.version or '1'})" for e in evidence_list
+        ]) if evidence_list else "No evidence uploaded"
+        
+        writer.writerow([
+            control.iso_clause or "N/A",
+            control.name,
+            "Yes" if control.status != "missing" else "No",
+            control.rationale or "N/A",
+            control.owner_email or "Unassigned",
+            control.status.upper(),
+            control.due_date.isoformat() if control.due_date else "Not set",
+            evidence_links
+        ])
+    
     return Response(content=output.getvalue(), media_type="text/csv")
 

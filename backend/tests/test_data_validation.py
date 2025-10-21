@@ -3,12 +3,18 @@ Tests for data validation and integrity
 Ensures all calculations are correct and no dummy data is returned
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
+
+import pytest
 from sqlalchemy.orm import Session
 
-from app.models import AISystem, Organization, Control, Incident
-from app.api.routes.reports import get_summary, get_score, get_blocking_issues, get_upcoming_deadlines
+from app.api.routes.reports import (
+    get_blocking_issues,
+    get_score,
+    get_summary,
+    get_upcoming_deadlines,
+)
+from app.models import AISystem, Control, Incident, Organization
 
 
 class TestDataValidation:

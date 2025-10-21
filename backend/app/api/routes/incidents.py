@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import Incident, Organization, AISystem
+from app.models import AISystem, Incident, Organization
 from app.schemas import IncidentCreate
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])

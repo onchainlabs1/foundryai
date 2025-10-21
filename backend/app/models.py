@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Index
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -13,6 +13,13 @@ class Organization(Base):
     name = Column(String(255), nullable=False)
     api_key = Column(String(255), unique=True, nullable=False, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # New audit-grade fields
+    primary_contact_name = Column(String(255))
+    primary_contact_email = Column(String(255))
+    dpo_contact_name = Column(String(255))
+    dpo_contact_email = Column(String(255))
+    org_role = Column(String(50))  # provider|deployer|both
 
     systems = relationship("AISystem", back_populates="organization")
     evidence = relationship("Evidence", back_populates="organization")
@@ -37,6 +44,20 @@ class AISystem(Base):
     criticality = Column(String(50))
     notes = Column(Text)
     ai_act_class = Column(String(50))
+    # Additional fields from frontend
+    lifecycle_stage = Column(String(100))
+    affected_users = Column(Text)
+    third_party_providers = Column(Text)
+    risk_category = Column(String(255))
+    
+    # New audit-grade fields for EU AI Act + ISO/IEC 42001
+    system_role = Column(String(50))  # provider|deployer
+    processes_sensitive_data = Column(Boolean, default=False)
+    uses_gpai = Column(Boolean, default=False)
+    biometrics_in_public = Column(Boolean, default=False)
+    annex3_categories = Column(Text)  # JSON array of categories
+    impacted_groups = Column(Text)  # Comma-separated or JSON
+    requires_fria = Column(Boolean, default=False)  # Computed flag
 
     organization = relationship("Organization", back_populates="systems")
     evidence = relationship("Evidence", back_populates="system")
@@ -117,11 +138,12 @@ class Incident(Base):
     id = Column(Integer, primary_key=True, index=True)
     org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
     system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
-    severity = Column(String(20), default="low")
+    severity = Column(String(20), default="low")  # low|medium|high
     description = Column(Text)
     detected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     resolved_at = Column(DateTime, nullable=True)
     corrective_action = Column(Text)
+    notify_list = Column(Text)  # Comma-separated emails or JSON
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -199,4 +221,81 @@ class OnboardingData(Base):
 
     organization = relationship("Organization")
     system = relationship("AISystem")
+
+
+class AIRisk(Base):
+    """Risk assessment for AI systems"""
+    __tablename__ = "ai_risk"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
+    system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
+    description = Column(Text, nullable=False)
+    likelihood = Column(String(10))  # L|M|H
+    impact = Column(String(10))  # L|M|H
+    mitigation = Column(Text)
+    residual_risk = Column(String(255))
+    owner_email = Column(String(255))
+    priority = Column(String(20), default="medium")  # low|med|high
+    due_date = Column(Date, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    organization = relationship("Organization")
+    ai_system = relationship("AISystem")
+
+
+class Oversight(Base):
+    """Human oversight configuration for AI systems"""
+    __tablename__ = "oversight"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
+    system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
+    oversight_mode = Column(String(50))  # in_the_loop|on_the_loop|in_command
+    intervention_rules = Column(Text)
+    manual_override = Column(Boolean, default=False)
+    appeals_channel = Column(String(500))  # URL or email
+    appeals_sla_days = Column(Integer)
+    appeals_responsible_email = Column(String(255))
+    change_approval_roles = Column(Text)  # JSON array or comma-separated
+    ethics_committee = Column(Boolean, default=False)
+    training_plan = Column(Text)
+    comm_plan = Column(Text)
+    external_disclosure = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    organization = relationship("Organization")
+    ai_system = relationship("AISystem")
+
+
+class PMM(Base):
+    """Post-Market Monitoring (Art. 72) configuration"""
+    __tablename__ = "pmm"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
+    system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
+    logging_scope = Column(Text)
+    retention_months = Column(Integer)
+    drift_threshold = Column(String(50))  # e.g., "0.1" or "10%"
+    fairness_metrics = Column(Text)  # JSON array
+    incident_tool = Column(String(255))
+    audit_frequency = Column(String(50))  # monthly|quarterly|semiannual|annual
+    management_review_frequency = Column(String(50))  # quarterly|semiannual|annual
+    improvement_plan = Column(Text)
+    eu_db_required = Column(Boolean, default=False)
+    eu_db_status = Column(String(100))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    organization = relationship("Organization")
+    ai_system = relationship("AISystem")
+
+
+# Additional indexes for new tables
+Index("ix_ai_risk_org_system", AIRisk.org_id, AIRisk.system_id)
+Index("ix_oversight_org_system", Oversight.org_id, Oversight.system_id)
+Index("ix_pmm_org_system", PMM.org_id, PMM.system_id)
 

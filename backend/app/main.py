@@ -1,5 +1,5 @@
-import uuid
 import logging
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
@@ -7,12 +7,28 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import evidence, reports, systems, fria, controls, incidents, compliance_suite, templates, documents, actions
+from app.api.routes import (
+    actions,
+    compliance_suite,
+    controls,
+    documents,
+    evidence,
+    fria,
+    incidents,
+    onboarding_audit,
+    reports,
+    systems,
+    templates,
+)
 from app.core.config import settings
+from app.core.logging_config import configure_logging
 from app.core.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from app.database import Base, SessionLocal, engine
 from app.models import Organization
 from app.services.s3 import s3_service
+
+# Configure structured logging
+configure_logging(use_json=settings.ENVIRONMENT == "production")
 
 
 @asynccontextmanager
@@ -116,6 +132,7 @@ app.include_router(compliance_suite.router)
 app.include_router(templates.router)
 app.include_router(documents.router)
 app.include_router(actions.router)
+app.include_router(onboarding_audit.router)  # Audit-grade onboarding endpoints
 
 
 @app.exception_handler(RequestValidationError)

@@ -3,17 +3,16 @@ E2E tests for Compliance Suite functionality.
 Tests document generation, citation enforcement, coverage validation, and exports.
 """
 import json
-import pytest
 import logging
+
+import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
+from app.database import Base, SessionLocal, engine
 from app.main import app
-from app.database import SessionLocal, engine, Base
-from app.models import Organization, AISystem, Evidence, FRIA, Control, Incident
-from app.services.risk import classify_ai_act, detect_role, is_gpai
+from app.models import FRIA, Control, Evidence, Incident, Organization
 
 
 @pytest.fixture
@@ -29,8 +28,6 @@ def client():
 def seeded_org_and_system(client):
     """Create organization and AI system with comprehensive test data."""
     # Create organization directly in database
-    from app.database import SessionLocal
-    from app.models import Organization
     
     db = SessionLocal()
     try:
@@ -69,7 +66,6 @@ def seeded_org_and_system(client):
         ("Transparency Documentation", "AIAct:Art12", "Transparency"),
         ("Human Oversight Procedures", "ISO42001:8.2.3", "Human Oversight"),
     ]):
-        from app.models import Evidence
         import hashlib
         
         db = SessionLocal()
@@ -92,8 +88,7 @@ def seeded_org_and_system(client):
             db.close()
     
     # Create FRIA directly in database
-    from app.models import FRIA
-    import json
+
     
     db = SessionLocal()
     try:
@@ -114,7 +109,6 @@ def seeded_org_and_system(client):
         db.close()
     
     # Create controls directly in database
-    from app.models import Control
     
     db = SessionLocal()
     try:
@@ -137,8 +131,8 @@ def seeded_org_and_system(client):
         db.close()
     
     # Create incidents directly in database
-    from app.models import Incident
     from datetime import datetime, timezone
+
     
     db = SessionLocal()
     try:

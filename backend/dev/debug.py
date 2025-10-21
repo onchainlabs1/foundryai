@@ -2,12 +2,12 @@
 Debug endpoints for development and troubleshooting.
 """
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import Organization, AISystem, Evidence, ArtifactText
+from app.models import AISystem, ArtifactText, Evidence, Organization
 from app.services.text_extraction import ingest_evidence_text
 
 router = APIRouter(prefix="/debug", tags=["debug"])

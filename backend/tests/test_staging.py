@@ -1,6 +1,5 @@
 """Tests for staging features: security headers, rate limiting, /ready endpoint."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app

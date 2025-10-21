@@ -1,10 +1,11 @@
 """
 Templates API endpoints for ISO/IEC 42001 templates.
 """
-import os
-import yaml
 import logging
-from typing import List, Dict, Any
+import os
+from typing import Any, Dict, List
+
+import yaml
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
@@ -69,6 +70,8 @@ def load_templates_from_filesystem() -> List[Dict[str, Any]]:
                             }
                             templates.append(template_info)
             except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
                 logger.error(f"Error loading template {filename}: {e}")
                 continue
     

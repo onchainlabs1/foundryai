@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session
 
 from app.models import ArtifactText, Evidence
 
-
 # Mapping patterns for filename/label to ISO clause or AI Act reference
 CLAUSE_PATTERNS = {
     r"risk.*assess": "ISO42001:6.1.1",
@@ -91,6 +90,8 @@ def extract_text_from_pdf(file_path: str) -> List[dict]:
         
     except Exception as e:
         # If extraction fails, return empty list (graceful degradation)
+        import logging
+        logger = logging.getLogger(__name__)
         logger.warning(f"Failed to extract text from {file_path}: {e}")
         return []
     
@@ -119,6 +120,8 @@ def ingest_evidence_text(
     ).count()
     
     if existing_count > 0:
+        import logging
+        logger = logging.getLogger(__name__)
         logger.info(f"Evidence {evidence.id} already ingested, skipping")
         return 0
     
@@ -132,6 +135,8 @@ def ingest_evidence_text(
     pages_data = extract_text_from_pdf(file_path)
     
     if not pages_data:
+        import logging
+        logger = logging.getLogger(__name__)
         logger.warning(f"No text extracted from {file_path}, creating placeholder")
         # Create placeholder for non-PDF or empty files
         pages_data = [{
@@ -161,6 +166,8 @@ def ingest_evidence_text(
     
     db.commit()
     
+    import logging
+    logger = logging.getLogger(__name__)
     logger.info(f"Ingested {created_count} pages from evidence {evidence.id}")
     return created_count
 

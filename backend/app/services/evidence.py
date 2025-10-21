@@ -1,10 +1,7 @@
 import base64
 import hashlib
-import os
 from pathlib import Path
-from typing import Dict, Optional, Tuple
-
-from fastapi import UploadFile
+from typing import Dict, Tuple
 
 from app.core.config import settings
 from app.services.s3 import s3_service

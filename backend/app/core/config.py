@@ -1,4 +1,3 @@
-import os
 from typing import Optional
 
 from pydantic import ConfigDict
@@ -6,6 +5,9 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    # Environment
+    ENVIRONMENT: str = "development"  # development or production
+    
     # Database
     DATABASE_URL: str = "sqlite:///./aims.db"
     

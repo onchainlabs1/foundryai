@@ -2,19 +2,20 @@
 Integration tests for critical flows that must work for release.
 """
 import os
+
 # Set SECRET_KEY before importing app
 os.environ["SECRET_KEY"] = "dev"
 
+
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
-from datetime import datetime, timezone
 
+from app.database import Base, get_db
 from app.main import app
-from app.database import get_db, Base
-from app.models import Organization, AISystem, Action
+from app.models import Action, AISystem, Organization
 
 # Create in-memory SQLite database for tests
 test_engine = create_engine(
@@ -99,6 +100,9 @@ def test_onboarding_to_documents_flow():
     # 3. Generate documents
     response = client.post(f"/documents/systems/{system_id}/generate",
                           json=onboarding_data, headers=HEADERS)
+    if response.status_code != 200:
+        print(f"ERROR: Document generation failed with {response.status_code}")
+        print(f"Response: {response.json()}")
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     

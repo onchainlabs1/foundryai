@@ -1,14 +1,11 @@
-import csv
-import io
-from datetime import datetime, timedelta, timezone
-from typing import List
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import Control, Organization, AISystem, Evidence
+from app.models import AISystem, Control, Evidence, Organization
 from app.schemas import ControlBulkRequest
 
 router = APIRouter(tags=["controls"])

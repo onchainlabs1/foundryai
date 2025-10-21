@@ -6,7 +6,7 @@ from app.core.security import verify_api_key
 from app.database import get_db
 from app.models import FRIA, AISystem, Organization
 from app.schemas import FRIACreate, FRIAResponse
-from app.services.fria import generate_fria_markdown, generate_fria_html
+from app.services.fria import generate_fria_html, generate_fria_markdown
 
 router = APIRouter(prefix="/systems", tags=["fria"])
 

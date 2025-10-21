@@ -1,16 +1,16 @@
 """
 Action items management endpoints.
 """
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from datetime import date, datetime, timezone
+from typing import List, Optional, Union
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime, timezone, date
-from typing import Union
+from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import Organization, Action, AISystem, Control
+from app.models import Action, AISystem, Control, Organization
 
 router = APIRouter(prefix="/actions", tags=["actions"])
 
@@ -53,12 +53,20 @@ class ActionResponse(BaseModel):
 
 @router.get("/", response_model=List[ActionResponse])
 async def get_actions(
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
     status: Optional[str] = None,
     system_id: Optional[int] = None,
 ):
     """Get all action items for the organization."""
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
     query = db.query(Action).filter(Action.org_id == org.id)
     
     if status:
@@ -73,10 +81,18 @@ async def get_actions(
 @router.post("/", response_model=ActionResponse)
 async def create_action(
     action_data: ActionCreate,
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Create a new action item."""
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
     # Validate system_id if provided
     if action_data.system_id:
         system = db.query(AISystem).filter(
@@ -144,10 +160,18 @@ async def get_action(
 async def update_action(
     action_id: int,
     action_data: ActionUpdate,
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Update an action item."""
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
     action = db.query(Action).filter(
         Action.id == action_id,
         Action.org_id == org.id
@@ -162,9 +186,12 @@ async def update_action(
     # Handle due_date parsing
     if 'due_date' in update_data and update_data['due_date']:
         try:
-            update_data['due_date'] = datetime.fromisoformat(update_data['due_date'].replace('Z', '+00:00'))
+            date_str = update_data['due_date'].replace('Z', '+00:00')
+            update_data['due_date'] = datetime.fromisoformat(date_str)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid due_date format")
+            raise HTTPException(
+                status_code=400, detail="Invalid due_date format"
+            )
     
     # Handle status change to completed
     if 'status' in update_data and update_data['status'] == 'completed':

@@ -2,14 +2,11 @@
 
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta
 from typing import Awaitable, Callable, Dict, Tuple
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-
-from app.core.config import settings
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

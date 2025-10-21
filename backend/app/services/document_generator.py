@@ -3,31 +3,30 @@ Document Generation Service for AIMS Readiness
 Generates ISO/IEC 42001 and EU AI Act compliance documents from onboarding data.
 """
 
-import os
-import json
-import hashlib
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
 from pathlib import Path
-from jinja2 import Environment, FileSystemLoader, Template
+from typing import Any, Dict, List
+
 import markdown
+from jinja2 import Environment, FileSystemLoader
 
 # Try to import WeasyPrint, but make it optional
 try:
-    from weasyprint import HTML, CSS
+    from weasyprint import CSS, HTML
     from weasyprint.text.fonts import FontConfiguration
     WEASYPRINT_AVAILABLE = True
-except (ImportError, OSError) as e:
+except (ImportError, OSError):
     WEASYPRINT_AVAILABLE = False
     # Note: logger will be configured after import
 
 # For testing fallback behavior, uncomment the line below:
 # WEASYPRINT_AVAILABLE = False
 
-from app.database import get_db
-from app.models import AISystem, Organization, Evidence
 from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import AISystem, Organization
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -88,6 +87,9 @@ class DocumentGenerator:
             
             org = db.query(Organization).filter(Organization.id == org_id).first()
             if not org:
+                # Debug: log all organizations in the database
+                all_orgs = db.query(Organization).all()
+                logger.error(f"Organization {org_id} not found. Available orgs: {[(o.id, o.name, o.api_key) for o in all_orgs]}")
                 raise ValueError(f"Organization {org_id} not found")
             
             # Create system-specific output directory

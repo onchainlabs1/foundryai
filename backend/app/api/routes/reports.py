@@ -1,18 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+import hashlib
+import logging
+import zipfile
+from datetime import datetime, timedelta, timezone
+from io import BytesIO
+
+from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import StreamingResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, text
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from datetime import datetime, timedelta, timezone
-from fastapi.responses import StreamingResponse, RedirectResponse
-from io import BytesIO
-import zipfile
-import hashlib
-import logging
-
-from app.models import AISystem, Organization, Control, Evidence, Incident, Action
-from app.schemas import ReportSummary, ScoreResponse
+from app.models import Action, AISystem, Control, Evidence, Incident, Organization
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +46,18 @@ async def export_pptx_redirect(
 
 @router.get("/summary")
 async def get_summary(
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Get summary report of AI systems."""
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
     try:
         # Get basic counts
         total_systems = db.query(AISystem).filter(AISystem.org_id == org.id).count()
@@ -201,7 +208,7 @@ async def get_score(
             "tooltip": "Score based on implemented controls percentage",
             "coverage_pct": org_score * 100
         }
-    except Exception as e:
+    except Exception:
         # Return basic data on error
         return {
             "org_score": 0.0,
@@ -264,7 +271,7 @@ async def get_blocking_issues(
         
         return {"blocking_issues": blocking_issues}
         
-    except Exception as e:
+    except Exception:
         # Return empty list on error to prevent frontend crashes
         return {"blocking_issues": []}
 
@@ -311,7 +318,7 @@ async def get_upcoming_deadlines(
         
         return {"upcoming_deadlines": upcoming_deadlines}
         
-    except Exception as e:
+    except Exception:
         # Return empty list on error to prevent frontend crashes
         return {"upcoming_deadlines": []}
 
@@ -329,10 +336,18 @@ async def get_annex_iv_zip(
 @router.get("/export/annex-iv.zip")
 async def get_annex_iv_zip_alias(
     system_id: int,
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Generate Annex IV zip file for a system (alias with .zip extension)."""
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
     return await _generate_annex_iv_zip(system_id, org, db)
 
 

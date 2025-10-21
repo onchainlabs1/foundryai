@@ -10,7 +10,27 @@ const toSnakeCase = (obj: any): any => {
   
   const result: any = {}
   for (const [key, value] of Object.entries(obj)) {
-    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
+    let snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
+    
+    // Special mappings for backend compatibility
+    if (key === 'systemOwner') {
+      snakeKey = 'owner_email'
+    } else if (key === 'processesPersonalData') {
+      snakeKey = 'personal_data_processed'
+    } else if (key === 'impactsFundamentalRights') {
+      snakeKey = 'impacts_fundamental_rights'
+    } else if (key === 'lifecycleStage') {
+      snakeKey = 'lifecycle_stage'
+    } else if (key === 'deploymentContext') {
+      snakeKey = 'deployment_context'
+    } else if (key === 'affectedUsers') {
+      snakeKey = 'affected_users'
+    } else if (key === 'thirdPartyProviders') {
+      snakeKey = 'third_party_providers'
+    } else if (key === 'riskCategory') {
+      snakeKey = 'risk_category'
+    }
+    
     result[snakeKey] = toSnakeCase(value)
   }
   return result
@@ -74,6 +94,21 @@ export default function OnboardingPage() {
   const [completed, setCompleted] = useState(false)
   const [systemIdMapping, setSystemIdMapping] = useState<Map<string, number>>(new Map())
 
+  // Function to reset onboarding state
+  const resetOnboarding = () => {
+    
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem('system-id-mapping')
+    setCurrentStep(1)
+    setData({ step: 1 })
+    setCompleted(false)
+    setSystemIdMapping(new Map())
+    console.log('Onboarding state reset')
+    
+    // Reload page to ensure clean state
+    setTimeout(() => window.location.reload(), 100)
+  }
+
   const steps = [
     { id: 1, title: 'Company Setup', icon: Building2, description: 'Basic organization information' },
     { id: 2, title: 'AI System Definition', icon: Bot, description: 'Define your AI systems' },
@@ -88,10 +123,35 @@ export default function OnboardingPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setData(parsed)
-        setCurrentStep(parsed.step || 1)
+        // Only load data if it's a valid ongoing session with meaningful data
+        if (parsed.step && 
+            parsed.step >= 1 && 
+            parsed.step <= steps.length && 
+            !parsed.completed &&
+            parsed.systems && 
+            parsed.systems.length > 0 && 
+            parsed.systems[0].name) {
+          setData(parsed)
+          setCurrentStep(parsed.step)
+          setCompleted(false)
+          console.log(`Loaded onboarding data: step ${parsed.step}`)
+        } else {
+          // Clear old completed or empty data
+          localStorage.removeItem(STORAGE_KEY)
+          localStorage.removeItem('system-id-mapping')
+          setCurrentStep(1)
+          setData({ step: 1 })
+          setCompleted(false)
+          console.log('Cleared old or empty onboarding data')
+        }
       } catch (error) {
         console.error('Failed to load saved onboarding data:', error)
+        // Clear corrupted data
+        localStorage.removeItem(STORAGE_KEY)
+        localStorage.removeItem('system-id-mapping')
+        setCurrentStep(1)
+        setData({ step: 1 })
+        setCompleted(false)
       }
     }
     
@@ -141,10 +201,15 @@ export default function OnboardingPage() {
   const handleSaveAndContinue = async (stepData: any) => {
     setSaving(true)
     try {
+      console.log(`🔄 handleSaveAndContinue called for step ${currentStep}`)
+      console.log('stepData received:', stepData)
+      
       updateData(stepData)
       
       // Handle step-specific saves
-      if (currentStep === 2 && stepData.systems) {
+      if (currentStep === 2 && stepData.systems && stepData.systems.length > 0) {
+        console.log('📍 Step 2 detected - creating systems...')
+        console.log('stepData.systems:', stepData.systems)
         // Check for existing systems to reuse or create new ones
         const existingSystems = await api.getSystems()
         
@@ -197,37 +262,79 @@ export default function OnboardingPage() {
           const tempId = system.tempId || `temp_${crypto.randomUUID()}`
           
           // Create the system with proper field mapping
+          // Remove fields that don't belong to the backend schema
+          const { tempId: _, company_id: __, ...systemData } = system
+          
           const newSystemPayload = {
-            ...system,
-            tempId: tempId, // Ensure tempId is part of the payload for mapping
-            company_id: data.company?.id,
+            ...systemData,
             impacts_fundamental_rights: system.impacts_fundamental_rights || false,
+            processes_personal_data: system.processesPersonalData || false,
           }
           
-          const createdSystem = await api.createSystem(toSnakeCase(newSystemPayload))
+          console.log(`📤 Creating system "${system.name}"...`)
+          console.log('Payload before snake_case:', newSystemPayload)
+          const snakeCasePayload = toSnakeCase(newSystemPayload)
+          console.log('Payload after snake_case:', snakeCasePayload)
           
-          // Store the mapping: tempId -> backendId
-          newIdMapping.set(tempId, createdSystem.id)
-          
-          // Add the created system to our list (keep form data, add only necessary backend ID)
-          createdSystems.push({
-            ...system, // Keep form data from frontend
-            id: createdSystem.id, // Only add the backend ID
-            tempId: tempId,
-          })
-          
-          console.log(`✅ Created new system: ${system.name} (ID: ${createdSystem.id})`)
-          
-          // Save onboarding data for this system
-          if (data.company || data.risks || data.oversight || data.monitoring) {
-            await api.saveOnboardingData(createdSystem.id, {
-              company: data.company,
-              risks: data.risks,
-              oversight: data.oversight,
-              monitoring: data.monitoring,
-              org_id: createdSystem.org_id,
-              ai_act_class: createdSystem.ai_act_class
+          try {
+            const createdSystem = await api.createSystem(snakeCasePayload)
+            
+            // Validate that the system was created with a valid ID
+            if (!createdSystem || !createdSystem.id) {
+              console.error(`❌ Failed to create system: ${system.name} - No ID returned`)
+              console.error('API Response:', createdSystem)
+              toast({
+                title: "Error",
+                description: `Failed to create system "${system.name}". Please try again.`,
+                variant: "destructive",
+              })
+              continue
+            }
+            
+            // Store the mapping: tempId -> backendId
+            newIdMapping.set(tempId, createdSystem.id)
+            
+            // Add the created system to our list (keep form data, add only necessary backend ID)
+            createdSystems.push({
+              ...system, // Keep form data from frontend
+              id: createdSystem.id, // Only add the backend ID
+              tempId: tempId,
             })
+            
+            console.log(`✅ Created new system: ${system.name} (ID: ${createdSystem.id})`)
+            
+            // Show success toast for each system
+            toast({
+              title: "Success",
+              description: `System "${system.name}" created successfully!`,
+              variant: "default",
+            })
+            
+            // Save onboarding data for this system
+            if (data.company || data.risks || data.oversight || data.monitoring) {
+              try {
+                await api.saveOnboardingData(createdSystem.id, {
+                  company: data.company,
+                  risks: data.risks,
+                  oversight: data.oversight,
+                  monitoring: data.monitoring,
+                  org_id: createdSystem.org_id,
+                  ai_act_class: createdSystem.ai_act_class
+                })
+                console.log(`✅ Saved onboarding data for system ${createdSystem.id}`)
+              } catch (saveError) {
+                console.error(`⚠️ Failed to save onboarding data for system ${createdSystem.id}:`, saveError)
+                // Don't throw - system is created, data save can be retried
+              }
+            }
+          } catch (createError) {
+            console.error(`❌ Exception creating system: ${system.name}`, createError)
+            toast({
+              title: "Error",
+              description: `Failed to create system "${system.name}". ${createError}`,
+              variant: "destructive",
+            })
+            continue
           }
         }
         
@@ -269,8 +376,50 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     setLoading(true)
     try {
+      console.log('=== Starting handleComplete ===')
+      console.log('Current data:', JSON.stringify(data, null, 2))
+      console.log('System ID mapping:', systemIdMapping)
+      
+      // Check if systems were created in Step 2, if not, try to fetch from backend
+      let systemsToUse = data.systems || []
+      
+      if (systemsToUse.length === 0) {
+        console.log('No systems in local data, fetching from backend...')
+        try {
+          const backendSystems = await api.getSystems()
+          console.log('Backend systems found:', backendSystems)
+          
+          if (backendSystems && backendSystems.length > 0) {
+            // Use backend systems as fallback
+            systemsToUse = backendSystems.map((system: any) => ({
+              ...system,
+              tempId: `backend_${system.id}`, // Create a tempId for backend systems
+            }))
+            console.log('Using backend systems as fallback:', systemsToUse)
+          } else {
+            // If no systems exist, that's ok - just complete with empty data
+            console.warn('No systems found - completing onboarding without systems')
+            toast({
+              title: "Warning",
+              description: "No systems were created during onboarding. You can create systems later from the Inventory page.",
+              variant: "default",
+            })
+          }
+        } catch (error) {
+          console.error('Failed to fetch systems from backend:', error)
+          // Don't throw error - allow completion anyway
+          toast({
+            title: "Warning",
+            description: "Could not verify systems. Completing onboarding anyway.",
+            variant: "default",
+          })
+        }
+      }
+      
+      console.log(`Found ${systemsToUse.length} systems to use`)
+      
       // Use deterministic mapping to ensure correct IDs
-      const syncedSystems = data.systems?.map((localSystem: any) => {
+      const syncedSystems = systemsToUse?.map((localSystem: any) => {
         // If system already has a real ID, keep it
         if (localSystem.id && localSystem.id > 0) {
           return localSystem
@@ -315,19 +464,56 @@ export default function OnboardingPage() {
         }
       }
       
+      // Validate that systems were created successfully
+      const systemsWithIds = syncedSystems.filter(s => s.id && s.id > 0)
+      
+      console.log('=== Systems Validation ===')
+      console.log('Synced systems:', syncedSystems)
+      console.log('Systems with IDs:', systemsWithIds)
+      console.log('Validation details:', {
+        totalSystems: syncedSystems.length,
+        systemsWithIds: systemsWithIds.length,
+        systems: syncedSystems.map(s => ({ name: s.name, id: s.id, tempId: s.tempId }))
+      })
+      
+      if (systemsWithIds.length === 0) {
+        console.warn('⚠️ No systems with valid IDs found - completing anyway')
+        console.warn('Synced systems details:', syncedSystems.map(s => ({
+          name: s.name,
+          id: s.id,
+          tempId: s.tempId,
+          hasId: !!s.id,
+          idType: typeof s.id,
+          idValue: s.id
+        })))
+        
+        toast({
+          title: "Onboarding Complete!",
+          description: "Onboarding completed. You can create systems from the Inventory page.",
+          variant: "default",
+        })
+      } else {
+        console.log('✅ Systems validation passed!')
+        
+        toast({
+          title: "Onboarding Complete!",
+          description: `Your AI systems (${systemsWithIds.length}) have been successfully configured. You can now generate compliance documents.`,
+          variant: "success",
+        })
+      }
+      
       setCompleted(true)
       setCurrentStep(steps.length + 1)
-      
-      toast({
-        title: "Onboarding Complete!",
-        description: "Your AI systems have been successfully configured. You can now generate compliance documents.",
-        variant: "success",
-      })
     } catch (error) {
-      console.error('Failed to complete onboarding:', error)
+      console.error('❌ Failed to complete onboarding:', error)
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        error: error
+      })
       toast({
         title: "Error",
-        description: "Failed to complete onboarding. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to complete onboarding. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -338,13 +524,13 @@ export default function OnboardingPage() {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <CompanySetup data={data.company} onUpdate={(company) => updateData({ company })} />
+        return <CompanySetup data={data.company} onUpdate={(company) => handleSaveAndContinue({ company })} />
       case 2:
-        return <SystemDefinition data={data.systems} onUpdate={(systems) => updateData({ systems })} />
+        return <SystemDefinition data={data.systems} onUpdate={(stepData) => handleSaveAndContinue(stepData)} />
       case 3:
-        return <RiskControls data={data.risks} onUpdate={(risks) => updateData({ risks })} />
+        return <RiskControls data={data.risks} onUpdate={(risks) => handleSaveAndContinue({ risks })} />
       case 4:
-        return <HumanOversight data={data.oversight} onUpdate={(oversight) => updateData({ oversight })} />
+        return <HumanOversight data={data.oversight} onUpdate={(oversight) => handleSaveAndContinue({ oversight })} />
       case 5:
         return <MonitoringImprovement data={data.monitoring} onUpdate={(monitoring) => updateData({ monitoring })} />
       case 6:
@@ -469,18 +655,35 @@ export default function OnboardingPage() {
 
           {/* Navigation */}
           <div className="flex justify-between items-center mt-8">
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className="flex items-center"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
-            </Button>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="flex items-center"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+              
+              {/* Emergency Reset Button */}
+              <Button
+                onClick={resetOnboarding}
+                variant="destructive"
+                size="sm"
+                className="flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+              </Button>
+            </div>
 
             <div className="flex space-x-3">
-              {currentStep < steps.length ? (
+              
+              {/* Show Continue button only for step 5 (monitoring) */}
+              {currentStep === 5 ? (
                 <Button
                   onClick={() => handleSaveAndContinue(data)}
                   disabled={saving}

@@ -2,10 +2,9 @@
 Document generation and management endpoints.
 """
 
-import os
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Response, Body
-from fastapi.responses import FileResponse
+from typing import Any, Dict
+
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
@@ -35,10 +34,18 @@ VALID_DOCUMENT_TYPES = {
 async def generate_system_documents(
     system_id: int,
     onboarding_data: Dict[str, Any] = Body(default=None),
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Generate all compliance documents for a system with real onboarding data."""
+    
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Get system
     system = db.query(AISystem).filter(
@@ -47,7 +54,32 @@ async def generate_system_documents(
     ).first()
     
     if not system:
+        # Debug: log all systems in the database
+        all_systems = db.query(AISystem).all()
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"System {system_id} not found for org {org.id}. Available systems: {[(s.id, s.name, s.org_id) for s in all_systems]}")
         raise HTTPException(status_code=404, detail="System not found")
+    
+    # FRIA gate: Check if FRIA is required and present
+    if system.requires_fria:
+        from app.models import Evidence
+        
+        # Check if FRIA evidence exists for this system
+        fria_evidence = db.query(Evidence).filter(
+            Evidence.system_id == system_id,
+            Evidence.org_id == org.id,
+            Evidence.label.ilike('%fria%')
+        ).first()
+        
+        if not fria_evidence:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "FRIA (Fundamental Rights Impact Assessment) is required for this system "
+                    "but has not been uploaded. Please complete the FRIA before generating documents."
+                )
+            )
     
     # Use provided onboarding data or fallback to defaults
     if not onboarding_data:
@@ -110,10 +142,18 @@ async def generate_system_documents(
 @router.get("/systems/{system_id}/list")
 async def list_system_documents(
     system_id: int,
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """List all generated documents for a system."""
+    
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Verify system exists and belongs to organization
     system = db.query(AISystem).filter(
@@ -143,10 +183,18 @@ async def download_document(
     system_id: int,
     doc_type: str,
     format: str = "markdown",
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Download a specific document for a system."""
+    
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Validate document type
     if doc_type not in VALID_DOCUMENT_TYPES:
@@ -207,10 +255,18 @@ async def download_document(
 async def preview_document(
     system_id: int,
     doc_type: str,
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Preview a document as HTML."""
+    
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Validate document type
     if doc_type not in VALID_DOCUMENT_TYPES:
@@ -239,8 +295,8 @@ async def preview_document(
             raise HTTPException(status_code=500, detail=f"Preview only supports markdown format, got: {actual_format}")
         
         # Convert markdown to HTML
-        import markdown
         import bleach
+        import markdown
         
         html_content = markdown.markdown(
             content.decode('utf-8'),

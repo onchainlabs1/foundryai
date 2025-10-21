@@ -1,8 +1,6 @@
 """S3/R2 storage service for evidence files."""
 
-import hashlib
-from datetime import timedelta
-from typing import Optional, Tuple
+from typing import Optional
 
 import boto3
 from botocore.client import Config as BotoConfig

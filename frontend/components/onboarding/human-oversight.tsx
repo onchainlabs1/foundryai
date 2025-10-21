@@ -28,13 +28,15 @@ import {
 
 const oversightSchema = z.object({
   oversightMethod: z.string().min(1, 'Oversight method is required'),
-  escalationRules: z.string().min(1, 'Escalation rules are required'),
-  appealsProcess: z.string().min(1, 'Appeals process is required'),
-  appealsSLA: z.string().min(1, 'Appeals SLA is required'),
-  changeApprovalRoles: z.array(z.string()).min(1, 'At least one approval role is required'),
+  escalationRules: z.string().optional(),
+  appealsProcess: z.string().optional(),
+  appealsSLA: z.string().optional(),
+  appealsResponsibleEmail: z.string().email().optional().or(z.literal('')),
+  changeApprovalRoles: z.array(z.string()).optional(),
   hasEthicsCommittee: z.boolean(),
-  staffTrainingPlan: z.string().min(1, 'Staff training plan is required'),
-  internalCommunicationPlan: z.string().min(1, 'Internal communication plan is required'),
+  manualOverride: z.boolean().optional(),
+  staffTrainingPlan: z.string().optional(),
+  internalCommunicationPlan: z.string().optional(),
   externalAIDisclosure: z.boolean()
 })
 

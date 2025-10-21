@@ -29,17 +29,24 @@ import {
 } from 'lucide-react'
 
 const monitoringSchema = z.object({
-  loggingScope: z.array(z.string()).min(1, 'At least one logging scope is required'),
-  logRetentionPeriod: z.string().min(1, 'Log retention period is required'),
-  driftAlertThreshold: z.number().min(0).max(100),
-  fairnessMetricsMonitored: z.array(z.string()).min(1, 'At least one fairness metric is required'),
-  incidentRegisterTool: z.string().min(1, 'Incident register tool is required'),
-  correctiveActionTracking: z.string().min(1, 'Corrective action tracking is required'),
-  hasNonConformities: z.boolean(),
+  loggingScope: z.array(z.string()).optional(),
+  logRetentionPeriod: z.string().optional(),
+  retentionMonths: z.number().optional(),
+  driftAlertThreshold: z.number().min(0).max(100).optional(),
+  driftThreshold: z.string().optional(),
+  fairnessMetricsMonitored: z.array(z.string()).optional(),
+  fairnessMetrics: z.string().optional(),
+  incidentRegisterTool: z.string().optional(),
+  incidentTool: z.string().optional(),
+  correctiveActionTracking: z.string().optional(),
+  hasNonConformities: z.boolean().optional(),
   nonConformitiesDescription: z.string().optional(),
-  internalAuditFrequency: z.string().min(1, 'Internal audit frequency is required'),
-  managementReviewFrequency: z.string().min(1, 'Management review frequency is required'),
-  improvementPlan: z.string().min(1, 'Improvement plan is required')
+  internalAuditFrequency: z.string().optional(),
+  auditFrequency: z.string().optional(),
+  managementReviewFrequency: z.string().optional(),
+  improvementPlan: z.string().optional(),
+  euDbRequired: z.boolean().optional(),
+  euDbStatus: z.string().optional()
 })
 
 type MonitoringFormData = z.infer<typeof monitoringSchema>
@@ -343,7 +350,7 @@ ${formData.improvementPlan || 'Not defined'}
                 </Label>
                 <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
                   <Slider
-                    value={[driftAlertThreshold]}
+                    value={[driftAlertThreshold || 10]}
                     onValueChange={(value) => setValue('driftAlertThreshold', value[0])}
                     max={100}
                     step={1}

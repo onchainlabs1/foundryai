@@ -7,7 +7,6 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from sqlalchemy.orm import Session
 
 from app.models import Organization
 

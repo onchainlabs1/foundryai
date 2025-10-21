@@ -2,13 +2,11 @@
 Tests for UTC timezone awareness in datetime fields.
 """
 
-import pytest
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.models import Organization, AISystem, Incident, Control, FRIA
+from app.models import FRIA, AISystem, Control, Incident, Organization
 
 
 class TestUTCTimezone:

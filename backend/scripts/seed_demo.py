@@ -18,9 +18,10 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.database import SessionLocal, engine, Base
-from app.models import Organization, AISystem, Evidence, Control, FRIA, Incident
 import logging
+
+from app.database import Base, SessionLocal, engine
+from app.models import FRIA, AISystem, Control, Evidence, Incident, Organization
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +146,7 @@ def seed_demo_data():
         db.refresh(credit_assist)
         db.refresh(chat_assist)
         db.refresh(ops_forecast)
-        logger.info(f"✓ Created 4 AI systems")
+        logger.info("✓ Created 4 AI systems")
 
         # Add Controls for VisionID (High-Risk)
         vision_controls = [
@@ -406,7 +407,7 @@ Generated at: 2024-12-16T14:20:00Z"""
         db.add(credit_fria)
 
         db.commit()
-        logger.info(f"✓ Created 2 FRIA assessments")
+        logger.info("✓ Created 2 FRIA assessments")
 
         # Add Incidents
         incidents = [
@@ -444,15 +445,15 @@ Generated at: 2024-12-16T14:20:00Z"""
         logger.info(f"✓ Created {len(incidents)} incidents")
 
         logger.info("\n✅ Demo data seeding completed successfully!")
-        logger.info(f"\n📊 Summary:")
+        logger.info("\n📊 Summary:")
         logger.info(f"   - Organization: {demo_org.name}")
         logger.info(f"   - API Key: {demo_org.api_key}")
-        logger.info(f"   - Systems: 4 (2 High-Risk, 1 GPAI, 1 Minimal)")
+        logger.info("   - Systems: 4 (2 High-Risk, 1 GPAI, 1 Minimal)")
         logger.info(f"   - Controls: {len(vision_controls + credit_controls + chat_controls + ops_controls)}")
         logger.info(f"   - Evidence: {len(evidence_items)}")
-        logger.info(f"   - FRIAs: 2")
+        logger.info("   - FRIAs: 2")
         logger.info(f"   - Incidents: {len(incidents)} (1 open, 2 resolved)")
-        logger.info(f"\n🚀 Ready to demo at: http://localhost:3002")
+        logger.info("\n🚀 Ready to demo at: http://localhost:3002")
         logger.info(f"   Login with API key: {demo_org.api_key}")
 
     except Exception as e:

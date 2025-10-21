@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Form
-from sqlalchemy.orm import Session
 import hashlib
-import os
 from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
+from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
@@ -66,14 +66,23 @@ async def upload_evidence(
     control_name: str = Form(None),
     version: str = Form(None),
     uploaded_by: str = Form(None),
-    org: Organization = Depends(verify_api_key),
+    x_api_key: str = Header(None),
     db: Session = Depends(get_db),
 ):
     """Upload evidence file or content for an AI system."""
     import logging
+
     from fastapi import HTTPException
     
     logger = logging.getLogger(__name__)
+    
+    # Verify API key and get organization
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
+    if not org:
+        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Verify system exists and belongs to org
     system = db.query(AISystem).filter(AISystem.id == system_id, AISystem.org_id == org.id).first()
