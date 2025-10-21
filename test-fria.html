@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test FRIA API</title>
+</head>
+<body>
+    <h1>Test FRIA API</h1>
+    <button onclick="testFRIA()">Test FRIA Creation</button>
+    <div id="result"></div>
+
+    <script>
+        async function testFRIA() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Test data
+                const testData = {
+                    system_id: 1,
+                    applicable: true,
+                    answers: {
+                        biometric_data: 'No',
+                        fundamental_rights: 'Yes',
+                        critical_infrastructure: 'No',
+                        vulnerable_groups: 'No',
+                        automated_decisions: 'Yes',
+                        human_oversight: 'Yes',
+                        subjects_informed: 'Yes',
+                        explainable_contestable: 'Yes',
+                        dpia_exists: 'Yes',
+                        bias_safeguards: 'Yes'
+                    }
+                };
+                
+                console.log('Testing FRIA with data:', testData);
+                
+                const response = await fetch('http://127.0.0.1:8001/systems/1/fria', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'dev-aims-demo-key'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>✅ FRIA Created Successfully!</h3>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                        <p><a href="http://127.0.0.1:8001/fria/${result.id}.md" target="_blank">Download Markdown</a></p>
+                        <p><a href="http://127.0.0.1:8001/fria/${result.id}.html" target="_blank">View HTML</a></p>
+                    `;
+                } else {
+                    const error = await response.text();
+                    resultDiv.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${error}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>❌ Network Error</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

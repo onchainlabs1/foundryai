@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import AISystem, Organization
+from app.services.document_context import DocumentContextService
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -110,7 +111,9 @@ class DocumentGenerator:
                 "appeals_flow": "08_APPEALS_FLOW.md",
                 "soa": "09_SOA_TEMPLATE.md",
                 "policy_register": "10_POLICY_REGISTER.md",
-                "audit_log": "11_AUDIT_LOG.md"
+                "audit_log": "11_AUDIT_LOG.md",
+                "annex_iv": "12_ANNEX_IV.md",  # Annex IV Technical Documentation
+                "instructions_for_use": "13_INSTRUCTIONS_FOR_USE.md"  # Mandatory Instructions for Use
             }
             
             # Generate each document
@@ -122,7 +125,8 @@ class DocumentGenerator:
                         template_file, 
                         system, 
                         org, 
-                        onboarding_data
+                        onboarding_data,
+                        db
                     )
                     
                     with open(md_path, 'w', encoding='utf-8') as f:
@@ -146,6 +150,39 @@ class DocumentGenerator:
                     logger.error(f"Error generating {doc_type}: {e}")
                     continue
             
+            # Conditionally generate GPAI Transparency Notice
+            if system.uses_gpai or system.is_general_purpose_ai:
+                try:
+                    gpai_template = "14_TRANSPARENCY_NOTICE_GPAI.md"
+                    md_path = system_dir / "transparency_notice_gpai.md"
+                    md_content = self._generate_document(
+                        gpai_template,
+                        system,
+                        org,
+                        onboarding_data,
+                        db
+                    )
+                    
+                    with open(md_path, 'w', encoding='utf-8') as f:
+                        f.write(md_content)
+                    
+                    if WEASYPRINT_AVAILABLE:
+                        pdf_path = system_dir / "transparency_notice_gpai.pdf"
+                        self._generate_pdf(md_content, pdf_path)
+                        generated_docs["transparency_notice_gpai"] = {
+                            "markdown_available": True,
+                            "pdf_available": True
+                        }
+                    else:
+                        generated_docs["transparency_notice_gpai"] = {
+                            "markdown_available": True,
+                            "pdf_available": False
+                        }
+                    
+                    logger.info(f"Generated GPAI Transparency Notice for system {system_id}")
+                except Exception as e:
+                    logger.error(f"Error generating GPAI transparency notice: {e}")
+            
             return generated_docs
             
         finally:
@@ -153,23 +190,22 @@ class DocumentGenerator:
                 db.close()
     
     def _generate_document(self, template_file: str, system: AISystem, org: Organization, 
-                          onboarding_data: Dict[str, Any]) -> str:
-        """Generate a single document from template and data."""
+                          onboarding_data: Dict[str, Any], db: Session) -> str:
+        """Generate a single document from template and data using DocumentContextService."""
+        
+        # Use DocumentContextService to build complete context
+        context_service = DocumentContextService(db)
+        context = context_service.build_system_context(system.id, org.id)
+        
+        # Add any additional onboarding data (for backwards compatibility)
+        context['onboarding_data'] = onboarding_data
+        context['onboarding'] = onboarding_data
+        
+        # Add legacy fields for backwards compatibility with old templates
+        legacy_fields = self._compute_document_fields(system, org, onboarding_data)
+        context.update(legacy_fields)
         
         template = self.jinja_env.get_template(template_file)
-        
-        # Prepare template context
-        context = {
-            "system": system,
-            "organization": org,
-            "onboarding": onboarding_data,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0.0"
-        }
-        
-        # Add computed fields
-        context.update(self._compute_document_fields(system, org, onboarding_data))
-        
         return template.render(**context)
     
     def _compute_document_fields(self, system: AISystem, org: Organization, 

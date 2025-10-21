@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FRIA List - Check Saved FRIA</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .fria-item { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .download-links { margin-top: 10px; }
+        .download-links a { margin-right: 10px; padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>📋 FRIA List - Check Saved FRIA</h1>
+    
+    <div>
+        <button onclick="checkFRIAStatus()">Check Latest FRIA</button>
+        <button onclick="listAllSystems()">List All Systems</button>
+        <button onclick="testNewFRIA()">Create Test FRIA</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8001';
+        const API_KEY = 'dev-aims-demo-key';
+        
+        async function checkFRIAStatus() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Checking FRIA status...';
+            
+            try {
+                console.log('🔍 Checking FRIA status for system 1');
+                
+                const response = await fetch(`${API_BASE}/systems/1/fria/latest`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                
+                if (response.ok) {
+                    const fria = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item success">
+                            <h3>✅ Latest FRIA Found!</h3>
+                            <p><strong>FRIA ID:</strong> ${fria.id}</p>
+                            <p><strong>Status:</strong> ${fria.status}</p>
+                            <p><strong>Applicable:</strong> ${fria.applicable ? 'Yes' : 'No'}</p>
+                            <p><strong>Created:</strong> Just now</p>
+                            <div class="download-links">
+                                <a href="${API_BASE}${fria.md_url}" target="_blank">Download Markdown</a>
+                                <a href="${API_BASE}${fria.html_url}" target="_blank">View HTML</a>
+                            </div>
+                        </div>
+                    `;
+                } else if (response.status === 404) {
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item error">
+                            <h3>❌ No FRIA Found</h3>
+                            <p>No FRIA has been created for this system yet.</p>
+                        </div>
+                    `;
+                } else {
+                    const error = await response.text();
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item error">
+                            <h3>❌ Error</h3>
+                            <p>Status: ${response.status}</p>
+                            <pre>${error}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="fria-item error">
+                        <h3>❌ Network Error</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function listAllSystems() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Loading systems...';
+            
+            try {
+                console.log('📋 Listing all systems');
+                
+                const response = await fetch(`${API_BASE}/systems`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                
+                if (response.ok) {
+                    const systems = await response.json();
+                    let html = '<div class="fria-item success"><h3>✅ Systems Found</h3>';
+                    
+                    for (const system of systems) {
+                        html += `
+                            <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 3px;">
+                                <p><strong>System ID:</strong> ${system.id}</p>
+                                <p><strong>Name:</strong> ${system.name}</p>
+                                <p><strong>Purpose:</strong> ${system.purpose}</p>
+                                <p><strong>AI Act Class:</strong> ${system.ai_act_class}</p>
+                                <button onclick="checkFRIAForSystem(${system.id})">Check FRIA for this system</button>
+                            </div>
+                        `;
+                    }
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    const error = await response.text();
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item error">
+                            <h3>❌ Error</h3>
+                            <p>Status: ${response.status}</p>
+                            <pre>${error}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="fria-item error">
+                        <h3>❌ Network Error</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function checkFRIAForSystem(systemId) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `Checking FRIA for system ${systemId}...`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/systems/${systemId}/fria/latest`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                
+                if (response.ok) {
+                    const fria = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item success">
+                            <h3>✅ FRIA Found for System ${systemId}</h3>
+                            <p><strong>FRIA ID:</strong> ${fria.id}</p>
+                            <p><strong>Status:</strong> ${fria.status}</p>
+                            <p><strong>Applicable:</strong> ${fria.applicable ? 'Yes' : 'No'}</p>
+                            <div class="download-links">
+                                <a href="${API_BASE}${fria.md_url}" target="_blank">Download Markdown</a>
+                                <a href="${API_BASE}${fria.html_url}" target="_blank">View HTML</a>
+                            </div>
+                        </div>
+                    `;
+                } else if (response.status === 404) {
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item error">
+                            <h3>❌ No FRIA Found for System ${systemId}</h3>
+                            <p>No FRIA has been created for this system yet.</p>
+                        </div>
+                    `;
+                } else {
+                    const error = await response.text();
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item error">
+                            <h3>❌ Error</h3>
+                            <p>Status: ${response.status}</p>
+                            <pre>${error}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="fria-item error">
+                        <h3>❌ Network Error</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testNewFRIA() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Creating test FRIA...';
+            
+            try {
+                const testData = {
+                    applicable: true,
+                    answers: {
+                        biometric_data: 'No',
+                        fundamental_rights: 'Yes',
+                        critical_infrastructure: 'No',
+                        vulnerable_groups: 'No',
+                        automated_decisions: 'Yes',
+                        human_oversight: 'Yes',
+                        subjects_informed: 'Yes',
+                        explainable_contestable: 'Yes',
+                        dpia_exists: 'Yes',
+                        bias_safeguards: 'Yes'
+                    }
+                };
+                
+                console.log('🧪 Creating test FRIA:', testData);
+                
+                const response = await fetch(`${API_BASE}/systems/1/fria`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item success">
+                            <h3>✅ Test FRIA Created!</h3>
+                            <p><strong>FRIA ID:</strong> ${result.id}</p>
+                            <p><strong>Status:</strong> ${result.status}</p>
+                            <p><strong>Applicable:</strong> ${result.applicable ? 'Yes' : 'No'}</p>
+                            <div class="download-links">
+                                <a href="${API_BASE}${result.md_url}" target="_blank">Download Markdown</a>
+                                <a href="${API_BASE}${result.html_url}" target="_blank">View HTML</a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const error = await response.text();
+                    resultsDiv.innerHTML = `
+                        <div class="fria-item error">
+                            <h3>❌ Error</h3>
+                            <p>Status: ${response.status}</p>
+                            <pre>${error}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="fria-item error">
+                        <h3>❌ Network Error</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

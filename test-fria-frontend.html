@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test FRIA Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 FRIA Frontend Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: FRIA Creation (Fixed Payload)</h3>
+        <button onclick="testFRIAFixed()">Test FRIA with Fixed Payload</button>
+        <div id="result1"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: FRIA Document Download</h3>
+        <button onclick="testFRIADownload()">Test Document Download</button>
+        <div id="result2"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: FRIA Status Check</h3>
+        <button onclick="testFRIAStatus()">Check FRIA Status</button>
+        <div id="result3"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8001';
+        const API_KEY = 'dev-aims-demo-key';
+        
+        async function testFRIAFixed() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Fixed payload (without system_id in body)
+                const testData = {
+                    applicable: true,
+                    answers: {
+                        biometric_data: 'No',
+                        fundamental_rights: 'Yes',
+                        critical_infrastructure: 'No',
+                        vulnerable_groups: 'No',
+                        automated_decisions: 'Yes',
+                        human_oversight: 'Yes',
+                        subjects_informed: 'Yes',
+                        explainable_contestable: 'Yes',
+                        dpia_exists: 'Yes',
+                        bias_safeguards: 'Yes'
+                    }
+                };
+                
+                console.log('🧪 Testing FRIA with fixed payload:', testData);
+                
+                const response = await fetch(`${API_BASE}/systems/1/fria`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ FRIA Created Successfully!</h4>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                            <p><strong>FRIA ID:</strong> ${result.id}</p>
+                            <p><strong>Status:</strong> ${result.status}</p>
+                            <p><strong>Applicable:</strong> ${result.applicable}</p>
+                        </div>
+                    `;
+                    window.lastFRIAId = result.id; // Store for next tests
+                } else {
+                    const error = await response.text();
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${error}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testFRIADownload() {
+            const resultDiv = document.getElementById('result2');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const friaId = window.lastFRIAId || 5; // Use last created or default
+                console.log('📄 Testing FRIA download for ID:', friaId);
+                
+                // Test Markdown download
+                const mdResponse = await fetch(`${API_BASE}/fria/${friaId}.md`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                
+                if (mdResponse.ok) {
+                    const mdContent = await mdResponse.text();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Document Download Working!</h4>
+                            <p><strong>FRIA ID:</strong> ${friaId}</p>
+                            <p><strong>Markdown Preview:</strong></p>
+                            <pre>${mdContent.substring(0, 500)}...</pre>
+                            <p><a href="${API_BASE}/fria/${friaId}.md" target="_blank">Download Markdown</a></p>
+                            <p><a href="${API_BASE}/fria/${friaId}.html" target="_blank">View HTML</a></p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Download Failed</h4>
+                            <p>Status: ${mdResponse.status}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Download Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testFRIAStatus() {
+            const resultDiv = document.getElementById('result3');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('📊 Testing FRIA status check');
+                
+                const response = await fetch(`${API_BASE}/systems/1/fria/latest`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ FRIA Status Retrieved!</h4>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Status Check Failed</h4>
+                            <p>Status: ${response.status}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Status Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

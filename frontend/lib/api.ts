@@ -143,6 +143,12 @@ export const api = {
   getSystemControls: (systemId: number) =>
     apiRequest(`/systems/${systemId}/controls`),
   
+  getSystemEvidence: (systemId: number) =>
+    apiRequest(`/controls/${systemId}/evidence`),
+  
+  getBlockingIssues: (systemId: number) =>
+    apiRequest(`/reports/blocking-issues?system_id=${systemId}`),
+  
   // Incidents
   createIncident: (data: any) =>
     apiRequest('/incidents', {

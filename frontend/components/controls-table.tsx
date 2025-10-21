@@ -16,6 +16,17 @@ interface Control {
   owner_email?: string
   due_date?: string
   rationale?: string
+  evidence_ids?: number[]  // New field for evidence linking
+}
+
+interface Evidence {
+  id: number
+  label: string
+  version: string
+  checksum: string
+  control_id?: number
+  iso_clause?: string
+  upload_date?: string
 }
 
 interface ControlsTableProps {
@@ -24,12 +35,16 @@ interface ControlsTableProps {
 
 export function ControlsTable({ systemId }: ControlsTableProps) {
   const [controls, setControls] = useState<Control[]>([])
+  const [evidence, setEvidence] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState<Record<number, boolean>>({})
+  const [evidenceModalOpen, setEvidenceModalOpen] = useState<number | null>(null)
+  const [selectedEvidence, setSelectedEvidence] = useState<number[]>([])
 
   useEffect(() => {
     loadControls()
+    loadEvidence()
   }, [systemId])
 
   const loadControls = async () => {
@@ -41,6 +56,15 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
       console.error('Failed to load controls:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadEvidence = async () => {
+    try {
+      const data = await api.getSystemEvidence(systemId)
+      setEvidence(data)
+    } catch (error) {
+      console.error('Failed to load evidence:', error)
     }
   }
 
@@ -77,6 +101,42 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
     const updated = [...controls]
     updated[index] = { ...updated[index], [field]: value }
     setControls(updated)
+  }
+
+  const handleOpenEvidenceModal = (controlIndex: number) => {
+    setEvidenceModalOpen(controlIndex)
+    setSelectedEvidence(controls[controlIndex].evidence_ids || [])
+  }
+
+  const handleCloseEvidenceModal = () => {
+    setEvidenceModalOpen(null)
+    setSelectedEvidence([])
+  }
+
+  const handleEvidenceSelection = (evidenceId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedEvidence([...selectedEvidence, evidenceId])
+    } else {
+      setSelectedEvidence(selectedEvidence.filter(id => id !== evidenceId))
+    }
+  }
+
+  const handleSaveEvidenceLinks = () => {
+    if (evidenceModalOpen !== null) {
+      const updated = [...controls]
+      updated[evidenceModalOpen] = { 
+        ...updated[evidenceModalOpen], 
+        evidence_ids: selectedEvidence 
+      }
+      setControls(updated)
+      handleCloseEvidenceModal()
+    }
+  }
+
+  const getEvidenceForControl = (controlIndex: number) => {
+    const control = controls[controlIndex]
+    if (!control.evidence_ids) return []
+    return evidence.filter(ev => control.evidence_ids?.includes(ev.id))
   }
 
   const handleExportSoA = async () => {
@@ -134,6 +194,7 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
                 <th className="text-left p-2 font-medium">Status</th>
                 <th className="text-left p-2 font-medium">Owner</th>
                 <th className="text-left p-2 font-medium">Due Date</th>
+                <th className="text-left p-2 font-medium">Evidence</th>
                 <th className="text-left p-2 font-medium">Rationale</th>
                 <th className="text-left p-2 font-medium">Actions</th>
               </tr>
@@ -231,6 +292,23 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
                           <span className="text-xs">{control.due_date || '-'}</span>
                         )}
                       </td>
+                      <td className="p-2">
+                        <div className="flex flex-col gap-1">
+                          {getEvidenceForControl(index).map(ev => (
+                            <span key={ev.id} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              {ev.label} (v{ev.version})
+                            </span>
+                          ))}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenEvidenceModal(index)}
+                            className="text-xs"
+                          >
+                            {getEvidenceForControl(index).length > 0 ? 'Edit' : 'Add'} Evidence
+                          </Button>
+                        </div>
+                      </td>
                       <td className="p-2 max-w-xs">
                         {isEditing ? (
                           <Input
@@ -260,6 +338,53 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
           </table>
         </div>
       </CardContent>
+      
+      {/* Evidence Linking Modal */}
+      {evidenceModalOpen !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Link Evidence to Control</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Select evidence to link to: <strong>{controls[evidenceModalOpen]?.name}</strong>
+            </p>
+            
+            <div className="space-y-2 mb-4">
+              {evidence.map(ev => (
+                <label key={ev.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedEvidence.includes(ev.id)}
+                    onChange={(e) => handleEvidenceSelection(ev.id, e.target.checked)}
+                    className="rounded"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium">{ev.label}</span>
+                    <span className="text-sm text-gray-500 ml-2">v{ev.version}</span>
+                    {ev.checksum && (
+                      <span className="text-xs text-gray-400 ml-2">sha256:{ev.checksum.substring(0, 8)}...</span>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+            
+            {evidence.length === 0 && (
+              <p className="text-gray-500 text-center py-4">
+                No evidence available. Upload evidence first in the Evidence tab.
+              </p>
+            )}
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={handleCloseEvidenceModal}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEvidenceLinks}>
+                Save Links
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }

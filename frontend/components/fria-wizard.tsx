@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api, downloadFile } from '@/lib/api'
@@ -31,9 +31,30 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
   const [loading, setLoading] = useState(false)
   const [completed, setCompleted] = useState(false)
   const [friaResult, setFriaResult] = useState<any>(null)
+  const [existingFRIA, setExistingFRIA] = useState<any>(null)
+  const [checkingExisting, setCheckingExisting] = useState(true)
 
   const currentQuestion = FRIA_QUESTIONS[currentStep]
   const progress = ((currentStep + 1) / FRIA_QUESTIONS.length) * 100
+
+  // Check for existing FRIA on component mount
+  useEffect(() => {
+    const checkExistingFRIA = async () => {
+      try {
+        console.log('🔍 Checking for existing FRIA for system:', systemId)
+        const existing = await api.getLatestFRIA(systemId)
+        console.log('📋 Found existing FRIA:', existing)
+        setExistingFRIA(existing)
+      } catch (error) {
+        console.log('ℹ️ No existing FRIA found (this is normal for new systems)')
+        setExistingFRIA(null)
+      } finally {
+        setCheckingExisting(false)
+      }
+    }
+    
+    checkExistingFRIA()
+  }, [systemId])
 
   const handleAnswer = (value: string) => {
     setAnswers({ ...answers, [currentQuestion.key]: value })
@@ -54,20 +75,108 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      const result = await api.createFRIA(systemId, {
-        system_id: systemId,
+      console.log('🚀 Submitting FRIA for system:', systemId)
+      console.log('📋 FRIA data:', {
         applicable: !notApplicable,
         answers: notApplicable ? {} : answers,
         justification: notApplicable ? justification : undefined,
       })
+      
+      const result = await api.createFRIA(systemId, {
+        applicable: !notApplicable,
+        answers: notApplicable ? {} : answers,
+        justification: notApplicable ? justification : undefined,
+      })
+      
+      console.log('✅ FRIA submitted successfully:', result)
       setFriaResult(result)
       setCompleted(true)
       onComplete?.()
     } catch (error) {
+      console.error('❌ FRIA submission failed:', error)
       alert('Failed to submit FRIA: ' + error)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading while checking for existing FRIA
+  if (checkingExisting) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>FRIA Assessment</CardTitle>
+          <CardDescription>Checking for existing assessments...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+            <span>Loading...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Show existing FRIA if found
+  if (existingFRIA && !completed) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing FRIA Assessment</CardTitle>
+          <CardDescription>This system already has a FRIA assessment</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-blue-800 font-medium">📋 FRIA Assessment Found</p>
+            <p className="text-sm text-blue-700 mt-1">
+              Status: {existingFRIA.status} | Applicable: {existingFRIA.applicable ? 'Yes' : 'No'}
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Download your FRIA:</p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  try {
+                    await downloadFile(existingFRIA.md_url, 'fria-document.md');
+                  } catch (error) {
+                    console.error('FRIA download failed:', error);
+                    alert('Download failed. Please check your API key.');
+                  }
+                }}
+              >
+                Download Markdown
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await downloadFile(existingFRIA.html_url, 'fria-document.html');
+                  } catch (error) {
+                    console.error('FRIA download failed:', error);
+                    alert('Download failed. Please check your API key.');
+                  }
+                }}
+              >
+                Download HTML
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={() => { setExistingFRIA(null); }}>
+              Create New Assessment
+            </Button>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Refresh
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (completed && friaResult) {
@@ -80,6 +189,9 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
         <CardContent className="space-y-4">
           <div className="p-4 bg-green-50 border border-green-200 rounded">
             <p className="text-green-800 font-medium">✓ FRIA assessment submitted successfully</p>
+            <p className="text-sm text-green-700 mt-1">
+              Status: {friaResult.status} | Applicable: {friaResult.applicable ? 'Yes' : 'No'}
+            </p>
           </div>
           
           <div className="space-y-2">

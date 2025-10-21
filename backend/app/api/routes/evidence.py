@@ -166,7 +166,32 @@ async def upload_evidence(
     else:
         raise HTTPException(status_code=400, detail="Either file or content must be provided")
 
-    # Create evidence record
+    # Check for existing evidence with same label (for versioning)
+    existing_evidence = db.query(Evidence).filter(
+        Evidence.org_id == org.id,
+        Evidence.system_id == system_id,
+        Evidence.label == label
+    ).order_by(Evidence.upload_date.desc()).first()
+    
+    # Auto-increment version if evidence with same label exists
+    if existing_evidence and not version:
+        # Parse existing version and increment
+        existing_version = existing_evidence.version or "1.0"
+        try:
+            parts = existing_version.split('.')
+            if len(parts) >= 2:
+                major, minor = int(parts[0]), int(parts[1])
+                version = f"{major}.{minor + 1}"
+            else:
+                version = "1.1"
+        except:
+            version = "1.1"
+        
+        logger.info(f"Auto-incrementing version: {existing_version} → {version}")
+    elif not version:
+        version = "1.0"
+    
+    # Create evidence record (no overwrite)
     evidence = Evidence(
         org_id=org.id,
         system_id=system_id,
@@ -182,6 +207,8 @@ async def upload_evidence(
     db.add(evidence)
     db.commit()
     db.refresh(evidence)
+    
+    logger.info(f"Evidence created: {label} v{version} (ID: {evidence.id})")
     
     # Ingest text from file (async background task in production)
     try:

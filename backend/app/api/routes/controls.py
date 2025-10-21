@@ -55,10 +55,67 @@ def bulk_upsert_controls(
         due = item_dict.get("due_date")
         ctrl.due_date = datetime.fromisoformat(due).date() if isinstance(due, str) and due else (due if hasattr(due, 'date') else None)
         ctrl.updated_at = datetime.now(timezone.utc)
+        
+        # Handle evidence linking
+        evidence_ids = item_dict.get("evidence_ids", [])
+        if evidence_ids:
+            # Link evidences to this control
+            for evidence_id in evidence_ids:
+                evidence = (
+                    db.query(Evidence)
+                    .filter(
+                        Evidence.id == evidence_id,
+                        Evidence.org_id == org.id,
+                        Evidence.system_id == item_dict["system_id"]
+                    )
+                    .first()
+                )
+                if evidence:
+                    evidence.control_id = ctrl.id
+                    evidence.iso42001_clause = ctrl.iso_clause
+                    evidence.control_name = ctrl.name
+        
         upserted += 1
 
     db.commit()
     return {"upserted": upserted}
+
+
+@router.get("/{system_id}/evidence")
+def list_available_evidence(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """List evidence available for linking to controls."""
+    # Verify system exists and belongs to org
+    system = (
+        db.query(AISystem)
+        .filter(AISystem.id == system_id, AISystem.org_id == org.id)
+        .first()
+    )
+    if not system:
+        raise HTTPException(status_code=404, detail=f"System {system_id} not found")
+    
+    # Get all evidence for this system
+    evidence = (
+        db.query(Evidence)
+        .filter(Evidence.system_id == system_id, Evidence.org_id == org.id)
+        .all()
+    )
+    
+    return [
+        {
+            "id": ev.id,
+            "label": ev.label,
+            "version": ev.version,
+            "checksum": ev.checksum,
+            "control_id": ev.control_id,
+            "iso_clause": ev.iso42001_clause,
+            "upload_date": ev.upload_date.isoformat() if ev.upload_date else None
+        }
+        for ev in evidence
+    ]
 
 
 

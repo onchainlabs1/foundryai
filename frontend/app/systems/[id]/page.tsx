@@ -7,6 +7,7 @@ import { api, downloadFile } from '@/lib/api'
 import { FRIAWizard } from '@/components/fria-wizard'
 import { ControlsTable } from '@/components/controls-table'
 import { IncidentsTable } from '@/components/incidents-modal'
+import { BlockingIssuesBanner } from '@/components/blocking-issues-banner'
 
 export default function SystemDetailPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -14,6 +15,7 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(false)
   const [system, setSystem] = useState<any>(null)
   const [systemLoading, setSystemLoading] = useState(true)
+  const [hasBlockingIssues, setHasBlockingIssues] = useState(false)
 
   useEffect(() => {
     const fetchSystem = async () => {
@@ -138,6 +140,16 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
                       </span>
                     </div>
                     <div>
+                      <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">EU Database Status</h3>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                        system.eu_db_status === 'registered' ? 'bg-green-100 text-green-800' :
+                        system.eu_db_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        🇪🇺 {system.eu_db_status?.toUpperCase() || 'N/A'}
+                      </span>
+                    </div>
+                    <div>
                       <h3 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Deployment Context</h3>
                       <p className="text-sm">{system.deployment_context || 'N/A'}</p>
                     </div>
@@ -197,6 +209,12 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
           </CardContent>
         </Card>
       )}
+
+      {/* Blocking Issues Banner */}
+      <BlockingIssuesBanner 
+        systemId={parseInt(params.id)} 
+        onIssuesChange={setHasBlockingIssues}
+      />
 
       {activeTab === 'aiact' && (
         <Card>
@@ -294,9 +312,10 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
               <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline"
+                  disabled={hasBlockingIssues}
                   onClick={async () => {
                     try {
-                      await downloadFile(`/reports/annex-iv.zip?system_id=${params.id}`, 'annex-iv.zip');
+                      await downloadFile(`/reports/annex-iv/${params.id}`, 'annex-iv.zip');
                     } catch (error) {
                       console.error('Download failed:', error);
                       alert('Download failed. Please check your API key.');
@@ -307,13 +326,9 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
                 </Button>
                 <Button 
                   variant="outline"
+                  disabled={hasBlockingIssues}
                   onClick={async () => {
-                    try {
-                      await downloadFile('/reports/deck.pptx', 'executive-deck.pptx');
-                    } catch (error) {
-                      console.error('Download failed:', error);
-                      alert('Download failed. Please check your API key.');
-                    }
+                    alert('Executive Deck generation is not yet implemented. Use individual document downloads instead.');
                   }}
                 >
                   Generate Executive Deck (.pptx)

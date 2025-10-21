@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import zipfile
 from datetime import datetime, timedelta, timezone
@@ -11,7 +12,8 @@ from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import Action, AISystem, Control, Evidence, Incident, Organization
+from app.models import Action, AISystem, Control, Evidence, Incident, Organization, FRIA
+from app.services.blocking_issues import BlockingIssuesService
 
 logger = logging.getLogger(__name__)
 
@@ -323,6 +325,17 @@ async def get_upcoming_deadlines(
         return {"upcoming_deadlines": []}
 
 
+@router.get("/blocking-issues")
+async def get_blocking_issues(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Get blocking issues for a system."""
+    service = BlockingIssuesService(db)
+    return service.get_issue_summary(system_id, org.id)
+
+
 @router.get("/annex-iv/{system_id}")
 async def get_annex_iv_zip(
     system_id: int,
@@ -364,9 +377,25 @@ async def _generate_annex_iv_zip(
     )
     if not system:
         raise HTTPException(status_code=404, detail="System not found")
+    
+    # FRIA Gate Enforcement
+    if system.requires_fria_computed:
+        fria = (
+            db.query(FRIA)
+            .filter(FRIA.system_id == system_id, FRIA.org_id == org.id)
+            .order_by(FRIA.created_at.desc())
+            .first()
+        )
+        if not fria or fria.status != 'submitted':
+            raise HTTPException(
+                status_code=409, 
+                detail="FRIA assessment required but not completed. Please complete the FRIA assessment before exporting documents."
+            )
 
     # Create zip file in memory
     zip_buffer = BytesIO()
+    artifacts = []
+    
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         # Add system information
         system_info = f"""System ID: {system.id}
@@ -381,6 +410,11 @@ AI Act Class: {system.ai_act_class}
 Created: {system.id}
 """
         zip_file.writestr("system_info.txt", system_info)
+        artifacts.append({
+            "name": "system_info.txt",
+            "sha256": hashlib.sha256(system_info.encode()).hexdigest(),
+            "bytes": len(system_info.encode())
+        })
 
         # Add controls
         controls = db.query(Control).filter(Control.system_id == system_id).all()
@@ -393,6 +427,11 @@ ISO Clause: {control.iso_clause}
 Priority: {control.priority}
 """
             zip_file.writestr(f"controls/{control.id}.txt", control_info)
+            artifacts.append({
+                "name": f"controls/{control.id}.txt",
+                "sha256": hashlib.sha256(control_info.encode()).hexdigest(),
+                "bytes": len(control_info.encode())
+            })
 
         # Add evidence (only if any exists)
         try:
@@ -412,9 +451,42 @@ Reviewer: {ev.reviewer_email}
 Link/Location: {ev.link_or_location}
 """
                 zip_file.writestr(f"evidence/{ev.id}.txt", evidence_info)
+                artifacts.append({
+                    "name": f"evidence/{ev.id}.txt",
+                    "sha256": hashlib.sha256(evidence_info.encode()).hexdigest(),
+                    "bytes": len(evidence_info.encode())
+                })
         except Exception as e:
             logger.warning(f"Could not fetch evidence for system {system_id}: {e}")
             # Continue without evidence
+        
+        # Generate manifest.json
+        manifest = {
+            "system_id": system_id,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generator_version": "1.0.0",
+            "artifacts": artifacts,
+            "sources": [
+                {
+                    "doc": "annex_iv",
+                    "evidence": [
+                        {
+                            "id": ev.id,
+                            "sha256": ev.checksum or "N/A"
+                        }
+                        for ev in evidence if ev.checksum
+                    ]
+                }
+            ]
+        }
+        
+        manifest_json = json.dumps(manifest, indent=2)
+        zip_file.writestr("manifest.json", manifest_json)
+        artifacts.append({
+            "name": "manifest.json",
+            "sha256": hashlib.sha256(manifest_json.encode()).hexdigest(),
+            "bytes": len(manifest_json.encode())
+        })
 
     zip_buffer.seek(0)
     zip_content = zip_buffer.getvalue()

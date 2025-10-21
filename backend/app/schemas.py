@@ -117,6 +117,7 @@ class ControlCreate(BaseModel):
     due_date: Optional[str] = None
     status: str
     rationale: Optional[str] = None
+    evidence_ids: Optional[List[int]] = None  # New field for evidence linking
 
 
 class ControlResponse(ControlCreate):

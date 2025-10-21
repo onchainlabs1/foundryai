@@ -58,6 +58,30 @@ class AISystem(Base):
     annex3_categories = Column(Text)  # JSON array of categories
     impacted_groups = Column(Text)  # Comma-separated or JSON
     requires_fria = Column(Boolean, default=False)  # Computed flag
+    eu_db_status = Column(String(50), default='pending')  # pending|registered|n/a
+    dpia_link = Column(String(500))  # URL or reference to GDPR Art. 35 DPIA
+    
+    @property
+    def requires_fria_computed(self) -> bool:
+        """Compute if system requires FRIA based on EU AI Act criteria."""
+        return (
+            self.impacts_fundamental_rights or
+            self.uses_biometrics or
+            self.biometrics_in_public or
+            self.ai_act_class == 'high-risk'
+        )
+    
+    @property
+    def eu_db_required_computed(self) -> bool:
+        """Compute if system requires EU Database registration."""
+        # Provider role is determined by:
+        # 1. system_role field if set, OR
+        # 2. organization org_role
+        is_provider = (
+            (self.system_role == 'provider') or
+            (self.organization and self.organization.org_role == 'provider')
+        )
+        return is_provider and self.ai_act_class == 'high-risk'
 
     organization = relationship("Organization", back_populates="systems")
     evidence = relationship("Evidence", back_populates="system")
@@ -102,6 +126,15 @@ class FRIA(Base):
     summary_md = Column(Text)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Extended FRIA fields for audit-grade compliance
+    ctx_json = Column(Text)  # System context snapshot
+    risks_json = Column(Text)  # Identified risks
+    safeguards_json = Column(Text)  # Mitigation measures
+    proportionality = Column(Text)  # Proportionality analysis
+    residual_risk = Column(String(50))  # low/medium/high
+    review_notes = Column(Text)  # Reviewer comments
+    dpia_reference = Column(String(500))  # Link to existing DPIA if applicable
 
 
 class Control(Base):
@@ -294,8 +327,27 @@ class PMM(Base):
     ai_system = relationship("AISystem")
 
 
+class ModelVersion(Base):
+    """Model version tracking for change management."""
+    __tablename__ = "model_versions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
+    system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
+    version = Column(String(50), nullable=False)  # e.g., "1.0.0", "2.1.3"
+    released_at = Column(DateTime, nullable=False)
+    approver_email = Column(String(255))
+    notes = Column(Text)
+    artifact_hash = Column(String(64))  # SHA-256 of model artifact
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    organization = relationship("Organization")
+    ai_system = relationship("AISystem")
+
+
 # Additional indexes for new tables
 Index("ix_ai_risk_org_system", AIRisk.org_id, AIRisk.system_id)
 Index("ix_oversight_org_system", Oversight.org_id, Oversight.system_id)
 Index("ix_pmm_org_system", PMM.org_id, PMM.system_id)
+Index("ix_model_versions_org_system", ModelVersion.org_id, ModelVersion.system_id)
 
