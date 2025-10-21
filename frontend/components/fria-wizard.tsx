@@ -82,11 +82,33 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
         justification: notApplicable ? justification : undefined,
       })
       
-      const result = await api.createFRIA(systemId, {
+      // Build extended FRIA payload
+      const payload: any = {
         applicable: !notApplicable,
         answers: notApplicable ? {} : answers,
         justification: notApplicable ? justification : undefined,
-      })
+      }
+      
+      // Add extended fields if applicable
+      if (!notApplicable) {
+        // Extract risks from answers
+        const risks = Object.entries(answers)
+          .filter(([key, value]) => key.includes('risk') || key.includes('impact'))
+          .map(([key, value]) => ({ question: key, answer: value }))
+        
+        // Extract safeguards from answers  
+        const safeguards = Object.entries(answers)
+          .filter(([key, value]) => key.includes('safeguard') || key.includes('mitigation') || key.includes('measure'))
+          .map(([key, value]) => ({ question: key, answer: value }))
+        
+        payload.ctx_json = JSON.stringify({ system_id: systemId, timestamp: new Date().toISOString() })
+        payload.risks_json = JSON.stringify(risks)
+        payload.safeguards_json = JSON.stringify(safeguards)
+        payload.proportionality = "Assessment indicates proportionate measures for identified risks"
+        payload.residual_risk = "Low"  // Could be derived from answers
+      }
+      
+      const result = await api.createFRIA(systemId, payload)
       
       console.log('✅ FRIA submitted successfully:', result)
       setFriaResult(result)

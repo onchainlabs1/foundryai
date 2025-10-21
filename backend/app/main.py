@@ -9,12 +9,14 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes import (
     actions,
+    approvals,
     compliance_suite,
     controls,
     documents,
     evidence,
     fria,
     incidents,
+    model_versions,
     onboarding_audit,
     reports,
     systems,
@@ -123,6 +125,8 @@ app.add_middleware(RateLimitMiddleware, rate_limit=settings.RATE_LIMIT)
 app.include_router(systems.router)
 app.include_router(evidence.router)
 app.include_router(reports.router)
+app.include_router(approvals.router)
+app.include_router(model_versions.router)
 app.include_router(fria.router)
 app.include_router(fria.static_router)
 app.include_router(controls.router, prefix="/controls")

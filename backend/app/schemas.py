@@ -98,6 +98,14 @@ class FRIACreate(BaseModel):
     applicable: bool
     answers: dict
     justification: Optional[str] = None
+    # Extended fields for audit-grade compliance
+    ctx_json: Optional[str] = None
+    risks_json: Optional[str] = None
+    safeguards_json: Optional[str] = None
+    proportionality: Optional[str] = None
+    residual_risk: Optional[str] = None
+    review_notes: Optional[str] = None
+    dpia_reference: Optional[str] = None
 
 
 class FRIAResponse(BaseModel):

@@ -31,6 +31,14 @@ def create_fria(
         status="submitted" if payload.applicable else "not_applicable",
         answers_json=str(payload.answers),
         summary_md=md_text,
+        # Extended fields
+        ctx_json=payload.ctx_json,
+        risks_json=payload.risks_json,
+        safeguards_json=payload.safeguards_json,
+        proportionality=payload.proportionality,
+        residual_risk=payload.residual_risk,
+        review_notes=payload.review_notes,
+        dpia_reference=payload.dpia_reference,
     )
     db.add(fria)
     db.commit()
