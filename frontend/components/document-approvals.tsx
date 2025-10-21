@@ -194,7 +194,25 @@ export function DocumentApprovals({ systemId, docType, docTitle }: DocumentAppro
                 <CheckCircle className="h-4 w-4 mr-2" />
                 {approving ? 'Approving...' : 'Approve'}
               </Button>
-              <Button variant="outline" disabled>
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  if (!approverEmail) {
+                    alert('Please enter approver email')
+                    return
+                  }
+                  const reason = prompt('Rejection reason:')
+                  if (!reason) return
+                  
+                  try {
+                    await api.rejectDocument(systemId, docType, approverEmail, reason, notes)
+                    alert('Document rejected')
+                    await loadApproval()
+                  } catch (error) {
+                    alert('Failed to reject: ' + error)
+                  }
+                }}
+              >
                 <XCircle className="h-4 w-4 mr-2" />
                 Reject
               </Button>

@@ -60,12 +60,15 @@ def submit_document_for_review(
     # Map doc_type to filename
     doc_filename_map = {
         "annex_iv": "annex_iv.md",
-        "fria": "fria.md",  # FRIA documents are in different location
+        "fria": "fria.md",
         "soa": "soa.md",
-        "pmm": "monitoring_report.md",
+        "monitoring_report": "monitoring_report.md",
+        "pmm": "monitoring_report.md",  # Alias
         "instructions_for_use": "instructions_for_use.md",
         "risk_assessment": "risk_assessment.md",
-        "human_oversight": "human_oversight.md"
+        "human_oversight": "human_oversight.md",
+        "logging_plan": "logging_plan.md",
+        "appeals_flow": "appeals_flow.md"
     }
     
     doc_filename = doc_filename_map.get(payload.doc_type)

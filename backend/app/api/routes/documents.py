@@ -26,7 +26,10 @@ VALID_DOCUMENT_TYPES = {
     "appeals_flow",
     "soa",
     "policy_register",
-    "audit_log"
+    "audit_log",
+    "annex_iv",
+    "instructions_for_use",
+    "fria"
 }
 
 

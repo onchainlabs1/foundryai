@@ -32,6 +32,11 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
   const [completed, setCompleted] = useState(false)
   const [friaResult, setFriaResult] = useState<any>(null)
   const [existingFRIA, setExistingFRIA] = useState<any>(null)
+  // Extended fields
+  const [proportionality, setProportionality] = useState('')
+  const [residualRisk, setResidualRisk] = useState('Low')
+  const [reviewNotes, setReviewNotes] = useState('')
+  const [dpiaReference, setDpiaReference] = useState('')
   const [checkingExisting, setCheckingExisting] = useState(true)
 
   const currentQuestion = FRIA_QUESTIONS[currentStep]
@@ -104,8 +109,18 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
         payload.ctx_json = JSON.stringify({ system_id: systemId, timestamp: new Date().toISOString() })
         payload.risks_json = JSON.stringify(risks)
         payload.safeguards_json = JSON.stringify(safeguards)
-        payload.proportionality = "Assessment indicates proportionate measures for identified risks"
-        payload.residual_risk = "Low"  // Could be derived from answers
+        payload.proportionality = proportionality || "Assessment indicates proportionate measures for identified risks"
+        payload.residual_risk = residualRisk || "Low"
+        payload.review_notes = reviewNotes
+        
+        // Check if DPIA is indicated in answers or manual input
+        const needsDPIA = Object.values(answers).some(answer => 
+          answer.toLowerCase().includes('personal data') || 
+          answer.toLowerCase().includes('privacy')
+        )
+        if (needsDPIA || dpiaReference) {
+          payload.dpia_reference = dpiaReference || "DPIA required - see system settings"
+        }
       }
       
       const result = await api.createFRIA(systemId, payload)
@@ -333,12 +348,66 @@ export function FRIAWizard({ systemId, onComplete }: FRIAWizardProps) {
               </Button>
               
               {currentStep === FRIA_QUESTIONS.length - 1 ? (
-                <Button 
-                  onClick={handleSubmit} 
-                  disabled={loading || Object.keys(answers).length < FRIA_QUESTIONS.length}
-                >
-                  {loading ? 'Submitting...' : 'Submit Assessment'}
-                </Button>
+                <div className="space-y-4">
+                  <div className="p-4 border rounded bg-gray-50">
+                    <h4 className="font-medium mb-3">Extended Assessment Fields</h4>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Proportionality Assessment</label>
+                        <textarea
+                          className="w-full border rounded p-2"
+                          rows={2}
+                          placeholder="Assess if safeguards are proportionate to risks..."
+                          value={proportionality}
+                          onChange={(e) => setProportionality(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Residual Risk Level</label>
+                        <select
+                          className="w-full border rounded p-2"
+                          value={residualRisk}
+                          onChange={(e) => setResidualRisk(e.target.value)}
+                        >
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">DPIA Reference (if applicable)</label>
+                        <input
+                          type="text"
+                          className="w-full border rounded p-2"
+                          placeholder="Link to DPIA document..."
+                          value={dpiaReference}
+                          onChange={(e) => setDpiaReference(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Review Notes</label>
+                        <textarea
+                          className="w-full border rounded p-2"
+                          rows={2}
+                          placeholder="Additional notes for review..."
+                          value={reviewNotes}
+                          onChange={(e) => setReviewNotes(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={loading || Object.keys(answers).length < FRIA_QUESTIONS.length}
+                  >
+                    {loading ? 'Submitting...' : 'Submit Assessment'}
+                  </Button>
+                </div>
               ) : (
                 <Button 
                   onClick={handleNext}

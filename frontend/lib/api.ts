@@ -165,11 +165,30 @@ export const api = {
       body: JSON.stringify({ approver_email: approverEmail, notes }),
     }),
   
+  rejectDocument: (systemId: number, docType: string, approverEmail: string, rejectionReason: string, notes?: string) =>
+    apiRequest(`/approvals/systems/${systemId}/documents/${docType}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ approver_email: approverEmail, rejection_reason: rejectionReason, notes }),
+    }),
+  
   getDocumentApproval: (systemId: number, docType: string) =>
     apiRequest(`/approvals/systems/${systemId}/documents/${docType}/approval`),
   
   listDocumentApprovals: (systemId: number) =>
     apiRequest(`/approvals/systems/${systemId}/documents/approvals`),
+  
+  // Model Versions
+  createModelVersion: (systemId: number, version: string, approverEmail: string, notes?: string, artifactHash?: string) =>
+    apiRequest(`/model-versions/systems/${systemId}`, {
+      method: 'POST',
+      body: JSON.stringify({ version, approver_email: approverEmail, notes, artifact_hash: artifactHash }),
+    }),
+  
+  listModelVersions: (systemId: number) =>
+    apiRequest(`/model-versions/systems/${systemId}`),
+  
+  getLatestModelVersion: (systemId: number) =>
+    apiRequest(`/model-versions/systems/${systemId}/latest`),
   
   // Incidents
   createIncident: (data: any) =>

@@ -344,6 +344,30 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
             docTitle="Annex IV Technical Documentation"
           />
 
+          <DocumentApprovals 
+            systemId={parseInt(params.id)} 
+            docType="fria" 
+            docTitle="Fundamental Rights Impact Assessment (FRIA)"
+          />
+
+          <DocumentApprovals 
+            systemId={parseInt(params.id)} 
+            docType="soa" 
+            docTitle="Statement of Applicability (SoA)"
+          />
+
+          <DocumentApprovals 
+            systemId={parseInt(params.id)} 
+            docType="monitoring_report" 
+            docTitle="Post-Market Monitoring Report"
+          />
+
+          <DocumentApprovals 
+            systemId={parseInt(params.id)} 
+            docType="instructions_for_use" 
+            docTitle="Instructions for Use"
+          />
+
           <IncidentsTable systemId={parseInt(params.id)} />
         </div>
       )}

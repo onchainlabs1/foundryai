@@ -102,7 +102,7 @@ class DocumentGenerator:
             # Document generation mapping
             document_templates = {
                 "risk_assessment": "01_RISK_ASSESSMENT.md",
-                "impact_assessment": "02_IMPACT_ASSESSMENT.md", 
+                "impact_assessment": "02_IMPACT_ASSESSMENT.md",
                 "model_card": "03_MODEL_CARD.md",
                 "data_sheet": "04_DATA_SHEET.md",
                 "logging_plan": "05_LOGGING_PLAN.md",
@@ -113,7 +113,8 @@ class DocumentGenerator:
                 "policy_register": "10_POLICY_REGISTER.md",
                 "audit_log": "11_AUDIT_LOG.md",
                 "annex_iv": "12_ANNEX_IV.md",  # Annex IV Technical Documentation
-                "instructions_for_use": "13_INSTRUCTIONS_FOR_USE.md"  # Mandatory Instructions for Use
+                "instructions_for_use": "13_INSTRUCTIONS_FOR_USE.md",  # Mandatory Instructions for Use
+                "fria": "15_FRIA.md"  # Fundamental Rights Impact Assessment
             }
             
             # Generate each document

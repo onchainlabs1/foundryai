@@ -2,43 +2,90 @@
 template_id: model_card_v1
 iso_clauses: ["A.6.2","B.6"]
 ai_act: ["Annex IV §8"]
-version: "{{ version }}"
+version: "{{ metadata.version }}"
 language: "en"
-generated_at: "{{ generated_at }}"
+generated_at: "{{ metadata.generated_at }}"
 ---
 
-# Model Card — {{ system.name }} v1.0
+# Model Card — {{ system.name }}{% if model_version %} v{{ model_version.version }}{% endif %}
 
-**Organization:** {{ company_name }}  
+**Organization:** {{ company.name }}  
 **System:** {{ system.name }}  
-**Domain:** {{ system_domain }}  
-**AI Act Classification:** {{ ai_act_classification }}  
-**Generated:** {{ generated_at }}
+**Domain:** {{ system.domain }}  
+**AI Act Classification:** {{ system.ai_act_class }}  
+**Generated:** {{ metadata.generated_at }}
 
 ## Overview
-- Objective: {{ system_purpose }}
-- Algorithm: AI/ML System
-- Owners: {{ company_name }} AI Team
-- General Purpose AI: {{ "Yes" if is_gpai else "No" }}
-- Biometric Data: {{ "Yes" if uses_biometrics else "No" }}
-- Personal Data: {{ "Yes" if personal_data else "No" }}
+- **Objective:** {{ system.purpose }}
+- **Algorithm:** AI/ML System
+- **Owner:** {{ system.owner_email }}
+- **Lifecycle Stage:** {{ system.lifecycle_stage }}
+- **Deployment Context:** {{ system.deployment_context }}
+- **General Purpose AI:** {{ "Yes" if system.is_general_purpose_ai else "No" }}
+- **Biometric Data:** {{ "Yes" if system.uses_biometrics else "No" }}
+- **Personal Data:** {{ "Yes" if system.personal_data_processed else "No" }}
 
 ## Data & Training
-- Sources: <datasets, dates, jurisdictions>
-- Quality: missing %, outliers, representativeness
-- Bias testing: metrics and acceptance gates
+
+{% if system.third_party_providers %}
+**Data Sources:**  
+{{ system.third_party_providers }}
+{% else %}
+**Data Sources:** Internal training data
+{% endif %}
+
+**Quality Assurance:** Data quality checks are performed as part of the PMM process  
+**Bias Testing:** Fairness metrics monitored: {{ pmm.fairness_metrics if pmm else 'Not configured' }}
 
 ## Performance
-| Metric | Value | Dataset | Date |
-|--------|------:|---------|------|
-| AUC / Accuracy | 0.92 | Holdout 2024Q4 | 2025‑01‑10 |
+
+{% if model_version %}
+**Current Version:** {{ model_version.version }}  
+**Released:** {{ model_version.released_at }}  
+**Approved By:** {{ model_version.approver_email }}  
+{% if model_version.artifact_hash %}**Artifact Hash:** {{ model_version.artifact_hash[:16] }}...{% endif %}
+{% else %}
+*Model versioning not yet configured*
+{% endif %}
+
+**Performance Monitoring:**  
+- Drift threshold: {{ pmm.drift_threshold if pmm else 'Not set' }}  
+- Retention period: {{ pmm.retention_months if pmm else 'Not set' }} months  
+- Review frequency: {{ pmm.management_review_frequency if pmm else 'Not set' }}
 
 ## Explainability & Limitations
-- Local explanations: SHAP/attribution viewer
-- Known limitations: <e.g., macro shocks, covariate shift>
+
+**Transparency:** {{ 'Explanations provided to users' if oversight else 'Standard explanations' }}  
+**Known Limitations:** {{ system.affected_users if system.affected_users else 'System limitations documented in risk assessment' }}
+
+{% if risks %}
+**Identified Limitations:**
+{% for risk in risks %}
+- {{ risk.description }} (Impact: {{ risk.impact }}, Likelihood: {{ risk.likelihood }})
+{% endfor %}
+{% endif %}
 
 ## Human Oversight & Change Management
-- Borderline review rules; escalation path
-- Versioning in MLflow; rollback policy; approvals
 
-References: ISO 42001 A.6.2/B.6; AI Act Annex IV §8.
+{% if oversight %}
+**Oversight Mode:** {{ oversight.mode }}  
+**Review Trigger:** {{ oversight.review_trigger }}  
+**Override Rights:** {{ 'Enabled' if oversight.override_rights else 'Not configured' }}  
+**Intervention Rules:** {{ oversight.intervention_rules }}
+{% else %}
+*Human oversight not configured*
+{% endif %}
+
+**Version Control:** {{ 'Model versions tracked' if model_versions else 'Not yet implemented' }}  
+**Rollback Policy:** Rollback to previous version if performance degrades beyond thresholds
+
+{% if model_versions %}
+**Version History:**
+{% for v in model_versions[:5] %}
+- v{{ v.version }} — {{ v.released_at }} — {{ v.approver_email }}
+{% endfor %}
+{% endif %}
+
+---
+
+**References:** ISO 42001 A.6.2/B.6; AI Act Annex IV §8.
