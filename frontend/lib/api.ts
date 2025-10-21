@@ -152,6 +152,25 @@ export const api = {
   getOrgBlockingIssues: () =>
     apiRequest(`/reports/blocking-issues/org`),
   
+  // Approvals
+  submitDocumentForReview: (systemId: number, docType: string, submittedBy: string, notes?: string) =>
+    apiRequest(`/approvals/systems/${systemId}/documents/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ doc_type: docType, submitted_by: submittedBy, notes }),
+    }),
+  
+  approveDocument: (systemId: number, docType: string, approverEmail: string, notes?: string) =>
+    apiRequest(`/approvals/systems/${systemId}/documents/${docType}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ approver_email: approverEmail, notes }),
+    }),
+  
+  getDocumentApproval: (systemId: number, docType: string) =>
+    apiRequest(`/approvals/systems/${systemId}/documents/${docType}/approval`),
+  
+  listDocumentApprovals: (systemId: number) =>
+    apiRequest(`/approvals/systems/${systemId}/documents/approvals`),
+  
   // Incidents
   createIncident: (data: any) =>
     apiRequest('/incidents', {

@@ -8,6 +8,7 @@ import { FRIAWizard } from '@/components/fria-wizard'
 import { ControlsTable } from '@/components/controls-table'
 import { IncidentsTable } from '@/components/incidents-modal'
 import { BlockingIssuesBanner } from '@/components/blocking-issues-banner'
+import { DocumentApprovals } from '@/components/document-approvals'
 
 export default function SystemDetailPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -336,6 +337,12 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
               </div>
             </CardContent>
           </Card>
+
+          <DocumentApprovals 
+            systemId={parseInt(params.id)} 
+            docType="annex_iv" 
+            docTitle="Annex IV Technical Documentation"
+          />
 
           <IncidentsTable systemId={parseInt(params.id)} />
         </div>

@@ -224,6 +224,25 @@ This system falls under the following high-risk AI system categories:
 
 ---
 
+## Document Approval
+
+{% if approval %}
+**Status:** {{ approval.status|upper }}  
+{% if approval.status == 'approved' %}
+**Approved By:** {{ approval.approver_email }}  
+**Approved At:** {{ approval.approved_at }}  
+**Document Hash:** {{ approval.document_hash[:16] }}...
+{% elif approval.status == 'submitted' %}
+**Submitted By:** {{ approval.submitted_by }}  
+**Submitted At:** {{ approval.submitted_at }}  
+**Awaiting Approval**
+{% endif %}
+{% else %}
+**Status:** DRAFT (Not yet submitted for review)
+{% endif %}
+
+---
+
 **Document Generated:** {{ metadata.generated_at }}  
 **System ID:** {{ metadata.system_id }}  
 **Organization:** {{ company.name }}

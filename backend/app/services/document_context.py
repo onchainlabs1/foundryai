@@ -13,7 +13,7 @@ from sqlalchemy import and_
 
 from app.models import (
     Organization, AISystem, AIRisk, Control, Oversight, PMM, 
-    Evidence, FRIA, OnboardingData, ModelVersion
+    Evidence, FRIA, OnboardingData, ModelVersion, DocumentApproval
 )
 
 
@@ -23,7 +23,7 @@ class DocumentContextService:
     def __init__(self, db: Session):
         self.db = db
     
-    def build_system_context(self, system_id: int, org_id: int) -> Dict[str, Any]:
+    def build_system_context(self, system_id: int, org_id: int, doc_type: Optional[str] = None) -> Dict[str, Any]:
         """
         Build complete context for a system including:
         - Company/org data
@@ -90,6 +90,17 @@ class DocumentContextService:
         
         # Get latest version
         latest_version = model_versions[0] if model_versions else None
+        
+        # Get approval for specific document type (if provided)
+        approval = None
+        if doc_type:
+            approval = self.db.query(DocumentApproval).filter(
+                and_(
+                    DocumentApproval.system_id == system_id,
+                    DocumentApproval.org_id == org_id,
+                    DocumentApproval.doc_type == doc_type
+                )
+            ).first()
         
         # Build context with defaults for missing data
         context = {
@@ -262,6 +273,17 @@ class DocumentContextService:
                 }
                 for v in model_versions
             ],
+            
+            # Document Approval (for specific doc_type)
+            "approval": {
+                "status": approval.status,
+                "submitted_by": approval.submitted_by,
+                "submitted_at": approval.submitted_at.isoformat() if approval.submitted_at else None,
+                "approver_email": approval.approver_email,
+                "approved_at": approval.approved_at.isoformat() if approval.approved_at else None,
+                "document_hash": approval.document_hash,
+                "notes": approval.notes
+            } if approval else None,
             
             # Metadata
             "metadata": {

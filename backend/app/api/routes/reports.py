@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import verify_api_key
 from app.database import get_db
-from app.models import Action, AISystem, Control, Evidence, Incident, Organization, FRIA
+from app.models import Action, AISystem, Control, Evidence, Incident, Organization, FRIA, DocumentApproval
 from app.services.blocking_issues import BlockingIssuesService
 
 logger = logging.getLogger(__name__)
@@ -461,12 +461,28 @@ Link/Location: {ev.link_or_location}
             logger.warning(f"Could not fetch evidence for system {system_id}: {e}")
             evidence = []  # Ensure evidence is empty list on error
         
+        # Get all document approvals for this system
+        approvals = (
+            db.query(DocumentApproval)
+            .filter(DocumentApproval.system_id == system_id, DocumentApproval.org_id == org.id)
+            .all()
+        )
+        
         # Generate manifest.json
         manifest = {
             "system_id": system_id,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "generator_version": "1.0.0",
             "artifacts": artifacts,
+            "approvals": [
+                {
+                    "doc": approval.doc_type,
+                    "status": approval.status,
+                    "email": approval.approver_email or approval.submitted_by,
+                    "timestamp": (approval.approved_at or approval.submitted_at).isoformat() if (approval.approved_at or approval.submitted_at) else None
+                }
+                for approval in approvals if approval.status in ['submitted', 'approved']
+            ],
             "sources": [
                 {
                     "doc": "annex_iv",

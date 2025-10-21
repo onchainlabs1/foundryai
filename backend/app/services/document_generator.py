@@ -126,7 +126,8 @@ class DocumentGenerator:
                         system, 
                         org, 
                         onboarding_data,
-                        db
+                        db,
+                        doc_type  # Pass doc_type for approval lookup
                     )
                     
                     with open(md_path, 'w', encoding='utf-8') as f:
@@ -160,7 +161,8 @@ class DocumentGenerator:
                         system,
                         org,
                         onboarding_data,
-                        db
+                        db,
+                        "transparency_notice_gpai"  # doc_type for approval
                     )
                     
                     with open(md_path, 'w', encoding='utf-8') as f:
@@ -190,12 +192,12 @@ class DocumentGenerator:
                 db.close()
     
     def _generate_document(self, template_file: str, system: AISystem, org: Organization, 
-                          onboarding_data: Dict[str, Any], db: Session) -> str:
+                          onboarding_data: Dict[str, Any], db: Session, doc_type: str = None) -> str:
         """Generate a single document from template and data using DocumentContextService."""
         
         # Use DocumentContextService to build complete context
         context_service = DocumentContextService(db)
-        context = context_service.build_system_context(system.id, org.id)
+        context = context_service.build_system_context(system.id, org.id, doc_type)
         
         # Add any additional onboarding data (for backwards compatibility)
         context['onboarding_data'] = onboarding_data

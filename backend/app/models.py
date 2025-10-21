@@ -345,9 +345,34 @@ class ModelVersion(Base):
     ai_system = relationship("AISystem")
 
 
+class DocumentApproval(Base):
+    """Document approval tracking for audit trail."""
+    __tablename__ = "doc_approvals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
+    system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
+    doc_type = Column(String(100), nullable=False)  # annex_iv|fria|soa|pmm|instructions_for_use
+    status = Column(String(50), default="draft")  # draft|submitted|approved|rejected
+    submitted_by = Column(String(255))
+    submitted_at = Column(DateTime, nullable=True)
+    approver_email = Column(String(255))
+    approved_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text)
+    notes = Column(Text)
+    document_hash = Column(String(64))  # SHA-256 of approved document version
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    organization = relationship("Organization")
+    ai_system = relationship("AISystem")
+
+
 # Additional indexes for new tables
 Index("ix_ai_risk_org_system", AIRisk.org_id, AIRisk.system_id)
 Index("ix_oversight_org_system", Oversight.org_id, Oversight.system_id)
 Index("ix_pmm_org_system", PMM.org_id, PMM.system_id)
 Index("ix_model_versions_org_system", ModelVersion.org_id, ModelVersion.system_id)
+Index("ix_doc_approvals_org_system", DocumentApproval.org_id, DocumentApproval.system_id)
+Index("ix_doc_approvals_doc_type", DocumentApproval.org_id, DocumentApproval.system_id, DocumentApproval.doc_type)
 
