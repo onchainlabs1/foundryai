@@ -9,6 +9,7 @@ import { ControlsTable } from '@/components/controls-table'
 import { IncidentsTable } from '@/components/incidents-modal'
 import { BlockingIssuesBanner } from '@/components/blocking-issues-banner'
 import { DocumentApprovals } from '@/components/document-approvals'
+import { ModelVersionPanel } from '@/components/model-version-panel'
 
 export default function SystemDetailPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -209,6 +210,12 @@ export default function SystemDetailPage({ params }: { params: { id: string } })
             )}
           </CardContent>
         </Card>
+      )}
+
+      {activeTab === 'overview' && (
+        <div className="mt-6">
+          <ModelVersionPanel systemId={parseInt(params.id)} />
+        </div>
       )}
 
       {/* Blocking Issues Banner */}

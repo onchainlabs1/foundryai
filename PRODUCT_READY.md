@@ -87,10 +87,11 @@ A **complete, audit-grade AI Act compliance platform** for SMBs with high-risk A
      - Generator version
 
 9. **Model Versioning**
-   - Track model releases
-   - Approver tracking
-   - Artifact hashes
-   - **Appears in Annex IV**
+   - **UI Panel** with create form + version history
+   - Track model releases (version, approver, notes, hash)
+   - Validation (version format, email)
+   - Latest version display with fallback
+   - **Appears in Annex IV and Model Card**
 
 10. **EU Database Status**
     - Computed flag (provider + high-risk)
@@ -142,6 +143,7 @@ A **complete, audit-grade AI Act compliance platform** for SMBs with high-risk A
 - **State:** React hooks + localStorage
 - **Dark Mode:** ✅ Supported
 - **Mobile:** ✅ Responsive
+- **Components:** 18+ custom components (incl. ModelVersionPanel)
 
 ---
 
@@ -259,6 +261,18 @@ npm run start  # or use Vercel/Netlify
 ---
 
 ## 🎓 USER DEMO SCRIPT
+
+### Step 0: Model Versioning (2 minutes - Optional)
+
+1. Navigate to system Overview tab
+2. Scroll to "Model Versions" panel
+3. Click "+ Create Version"
+4. Enter version (e.g., "1.0.0")
+5. Enter approver email
+6. Add release notes (optional)
+7. Add artifact hash (optional)
+8. Click "Create Version"
+9. See version in history and "Current Version" banner
 
 ### Step 1: Onboarding (10 minutes)
 
