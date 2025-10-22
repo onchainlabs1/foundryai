@@ -53,19 +53,12 @@ class ActionResponse(BaseModel):
 
 @router.get("/", response_model=List[ActionResponse])
 async def get_actions(
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
     status: Optional[str] = None,
     system_id: Optional[int] = None,
 ):
     """Get all action items for the organization."""
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     query = db.query(Action).filter(Action.org_id == org.id)
     
@@ -81,17 +74,10 @@ async def get_actions(
 @router.post("/", response_model=ActionResponse)
 async def create_action(
     action_data: ActionCreate,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Create a new action item."""
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Validate system_id if provided
     if action_data.system_id:
@@ -160,17 +146,10 @@ async def get_action(
 async def update_action(
     action_id: int,
     action_data: ActionUpdate,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Update an action item."""
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     action = db.query(Action).filter(
         Action.id == action_id,

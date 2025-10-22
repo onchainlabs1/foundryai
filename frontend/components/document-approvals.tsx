@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -37,9 +37,9 @@ export function DocumentApprovals({ systemId, docType, docTitle }: DocumentAppro
 
   useEffect(() => {
     loadApproval()
-  }, [systemId, docType])
+  }, [loadApproval])
 
-  const loadApproval = async () => {
+  const loadApproval = useCallback(async () => {
     try {
       const data = await api.getDocumentApproval(systemId, docType)
       setApproval(data)
@@ -48,7 +48,7 @@ export function DocumentApprovals({ systemId, docType, docTitle }: DocumentAppro
     } finally {
       setLoading(false)
     }
-  }
+  }, [systemId, docType])
 
   const handleSubmitForReview = async () => {
     if (!submitterEmail) {

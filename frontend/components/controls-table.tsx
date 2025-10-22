@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -45,9 +45,9 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
   useEffect(() => {
     loadControls()
     loadEvidence()
-  }, [systemId])
+  }, [systemId, loadControls, loadEvidence])
 
-  const loadControls = async () => {
+  const loadControls = useCallback(async () => {
     setLoading(true)
     try {
       const data = await api.getSystemControls(systemId)
@@ -57,16 +57,16 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [systemId])
 
-  const loadEvidence = async () => {
+  const loadEvidence = useCallback(async () => {
     try {
       const data = await api.getSystemEvidence(systemId)
       setEvidence(data)
     } catch (error) {
       console.error('Failed to load evidence:', error)
     }
-  }
+  }, [systemId])
 
   const handleSaveAll = async () => {
     setSaving(true)

@@ -9,11 +9,11 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.api.routes.reports import (
-    get_blocking_issues,
     get_score,
     get_summary,
     get_upcoming_deadlines,
 )
+from app.services.blocking_issues import get_org_blocking_issues as get_blocking_issues
 from app.models import AISystem, Control, Incident, Organization
 
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -36,9 +36,9 @@ export function ModelVersionPanel({ systemId }: ModelVersionPanelProps) {
 
   useEffect(() => {
     loadVersions()
-  }, [systemId])
+  }, [loadVersions])
 
-  const loadVersions = async () => {
+  const loadVersions = useCallback(async () => {
     try {
       const [versionsList, latest] = await Promise.all([
         api.listModelVersions(systemId),
@@ -51,7 +51,7 @@ export function ModelVersionPanel({ systemId }: ModelVersionPanelProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [systemId])
 
   const handleCreate = async () => {
     if (!version || !approverEmail) {

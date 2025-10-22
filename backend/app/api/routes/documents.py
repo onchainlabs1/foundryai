@@ -37,18 +37,10 @@ VALID_DOCUMENT_TYPES = {
 async def generate_system_documents(
     system_id: int,
     onboarding_data: Dict[str, Any] = Body(default=None),
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Generate all compliance documents for a system with real onboarding data."""
-    
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Get system
     system = db.query(AISystem).filter(
@@ -146,18 +138,10 @@ async def generate_system_documents(
 @router.get("/systems/{system_id}/list")
 async def list_system_documents(
     system_id: int,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """List all generated documents for a system."""
-    
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Verify system exists and belongs to organization
     system = db.query(AISystem).filter(
@@ -187,18 +171,11 @@ async def download_document(
     system_id: int,
     doc_type: str,
     format: str = "markdown",
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Download a specific document for a system."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Validate document type
     if doc_type not in VALID_DOCUMENT_TYPES:
@@ -259,18 +236,11 @@ async def download_document(
 async def preview_document(
     system_id: int,
     doc_type: str,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Preview a document as HTML."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Validate document type
     if doc_type not in VALID_DOCUMENT_TYPES:

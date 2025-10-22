@@ -9,8 +9,15 @@ function getApiKey(): string | null {
     return storedKey;
   }
   
-  // If no key in localStorage, use development key and store it
+  // In production, require explicit API key configuration
+  if (process.env.NODE_ENV === 'production') {
+    console.error('API key not configured. Please set NEXT_PUBLIC_API_KEY environment variable.');
+    return null;
+  }
+  
+  // Development fallback only in development mode
   const devKey = 'dev-aims-demo-key';
+  console.warn('Using development API key. Set NEXT_PUBLIC_API_KEY for production.');
   localStorage.setItem('apiKey', devKey);
   return devKey;
 }

@@ -48,31 +48,23 @@ async def export_pptx_redirect(
 
 @router.get("/summary")
 async def get_summary(
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Get summary report of AI systems."""
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     try:
-        # Get basic counts
+        # Get basic counts with proper error handling
         total_systems = db.query(AISystem).filter(AISystem.org_id == org.id).count()
         
-        # Calculate evidence coverage with proper error handling
+        # Calculate evidence coverage with structured logging
         evidence_coverage_pct = 0.0
         evidence_coverage_status = "unknown"
         
         try:
-            # Use ORM queries instead of raw SQL for better type safety
             from app.models import Control, Evidence
             
-            # Count controls using ORM
+            # Count controls using ORM with proper error handling
             total_controls = db.query(Control).filter(Control.org_id == org.id).count()
             
             if total_controls > 0:
@@ -105,38 +97,59 @@ async def get_summary(
                 logger.info("No controls found for organization - evidence coverage set to 0%")
         except Exception as e:
             evidence_coverage_status = "error"
-            logger.error(f"Could not calculate evidence coverage: {e}")
+            logger.error(f"Could not calculate evidence coverage: {e}", exc_info=True)
             evidence_coverage_pct = 0.0
         
-        # Calculate real metrics - consider both criticality and ai_act_class
-        high_risk_systems = db.query(AISystem).filter(
-            AISystem.org_id == org.id,
-            or_(
-                AISystem.criticality == 'high',
-                AISystem.ai_act_class == 'high-risk'
-            )
-        ).count()
+        # Calculate real metrics with proper field normalization
+        high_risk_systems = 0
+        try:
+            # Normalize ai_act_class values before querying
+            high_risk_systems = db.query(AISystem).filter(
+                AISystem.org_id == org.id,
+                or_(
+                    AISystem.criticality == 'high',
+                    AISystem.ai_act_class.in_(['high', 'high-risk', 'high_risk'])
+                )
+            ).count()
+            logger.info(f"High risk systems count: {high_risk_systems}")
+        except Exception as e:
+            logger.error(f"Error calculating high risk systems: {e}", exc_info=True)
         
-        # Count incidents in last 30 days
-        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        last_30d_incidents = db.query(Incident).filter(
-            Incident.org_id == org.id,
-            Incident.detected_at >= thirty_days_ago
-        ).count()
+        # Count incidents in last 30 days with error handling
+        last_30d_incidents = 0
+        try:
+            thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+            last_30d_incidents = db.query(Incident).filter(
+                Incident.org_id == org.id,
+                Incident.detected_at >= thirty_days_ago
+            ).count()
+            logger.info(f"Last 30 days incidents: {last_30d_incidents}")
+        except Exception as e:
+            logger.error(f"Error calculating incidents: {e}", exc_info=True)
         
-        # Count GPAI systems
-        gpai_count = db.query(AISystem).filter(
-            AISystem.org_id == org.id,
-            AISystem.is_general_purpose_ai == True
-        ).count()
+        # Count GPAI systems with error handling
+        gpai_count = 0
+        try:
+            gpai_count = db.query(AISystem).filter(
+                AISystem.org_id == org.id,
+                AISystem.is_general_purpose_ai == True
+            ).count()
+            logger.info(f"GPAI systems count: {gpai_count}")
+        except Exception as e:
+            logger.error(f"Error calculating GPAI count: {e}", exc_info=True)
         
-        # Count open actions in last 7 days
-        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
-        open_actions_7d = db.query(Action).filter(
-            Action.org_id == org.id,
-            Action.status.in_(['open', 'in_progress']),
-            Action.created_at >= seven_days_ago
-        ).count()
+        # Count open actions in last 7 days with error handling
+        open_actions_7d = 0
+        try:
+            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            open_actions_7d = db.query(Action).filter(
+                Action.org_id == org.id,
+                Action.status.in_(['open', 'in_progress']),
+                Action.created_at >= seven_days_ago
+            ).count()
+            logger.info(f"Open actions last 7 days: {open_actions_7d}")
+        except Exception as e:
+            logger.error(f"Error calculating open actions: {e}", exc_info=True)
         
         return {
             "systems": total_systems,
@@ -364,22 +377,7 @@ async def get_annex_iv_complete(
     return await _generate_complete_annex_iv(system_id, org, db)
 
 
-@router.get("/export/annex-iv.zip")
-async def get_annex_iv_zip_alias(
-    system_id: int,
-    x_api_key: str = Header(None),
-    db: Session = Depends(get_db),
-):
-    """Generate Annex IV zip file for a system (alias with .zip extension)."""
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
-    
-    return await _generate_annex_iv_zip(system_id, org, db)
+# Removed duplicate /export/annex-iv.zip route - use /annex-iv/{system_id} instead
 
 
 async def _generate_annex_iv_zip(

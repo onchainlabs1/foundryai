@@ -66,7 +66,7 @@ async def upload_evidence(
     control_name: str = Form(None),
     version: str = Form(None),
     uploaded_by: str = Form(None),
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Upload evidence file or content for an AI system."""
@@ -76,13 +76,6 @@ async def upload_evidence(
     
     logger = logging.getLogger(__name__)
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Verify system exists and belongs to org
     system = db.query(AISystem).filter(AISystem.id == system_id, AISystem.org_id == org.id).first()

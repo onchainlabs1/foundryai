@@ -29,18 +29,11 @@ router = APIRouter(prefix="/onboarding", tags=["onboarding-audit"])
 @router.post("/org/setup")
 async def setup_organization(
     setup_data: OrgSetup,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Update organization with audit-grade compliance contacts."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Update organization fields
     if setup_data.primary_contact_name:
@@ -68,18 +61,11 @@ async def setup_organization(
 async def create_risks_bulk(
     system_id: int,
     bulk_data: RiskBulkCreate,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Create multiple risks for a system (minimum 3 required)."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Verify system exists and belongs to org
     system = db.query(AISystem).filter(
@@ -125,18 +111,11 @@ async def create_risks_bulk(
 @router.post("/controls/bulk")
 async def create_controls_bulk(
     bulk_data: ControlsBulkCreate,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Create multiple controls in bulk."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     created_controls = []
     
@@ -177,18 +156,11 @@ async def create_controls_bulk(
 async def create_oversight(
     system_id: int,
     oversight_data: OversightCreate,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Configure human oversight for an AI system (Art. 14/15)."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Verify system exists and belongs to org
     system = db.query(AISystem).filter(
@@ -229,18 +201,11 @@ async def create_oversight(
 async def create_pmm(
     system_id: int,
     pmm_data: PMMCreate,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Configure Post-Market Monitoring for an AI system (Art. 72)."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Verify system exists and belongs to org
     system = db.query(AISystem).filter(
@@ -280,18 +245,11 @@ async def create_pmm(
 @router.get("/systems/{system_id}/risks", response_model=List[RiskResponse])
 async def get_risks(
     system_id: int,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Get all risks for a system."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Get risks
     risks = db.query(AIRisk).filter(
@@ -305,18 +263,11 @@ async def get_risks(
 @router.get("/systems/{system_id}/oversight", response_model=OversightResponse)
 async def get_oversight(
     system_id: int,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Get oversight configuration for a system."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Get oversight
     oversight = db.query(Oversight).filter(
@@ -333,18 +284,11 @@ async def get_oversight(
 @router.get("/systems/{system_id}/pmm", response_model=PMMResponse)
 async def get_pmm(
     system_id: int,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Get PMM configuration for a system."""
     
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Get PMM
     pmm = db.query(PMM).filter(
