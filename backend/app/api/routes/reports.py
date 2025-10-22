@@ -343,7 +343,16 @@ async def get_annex_iv_zip(
     db: Session = Depends(get_db),
 ):
     """Generate Annex IV zip file for a system."""
-    return await _generate_annex_iv_zip(system_id, org, db)
+    return await _generate_annex_iv_zip_v2(system_id, org, db)
+
+@router.get("/annex-iv-v2/{system_id}")
+async def get_annex_iv_zip_v2(
+    system_id: int,
+    org: Organization = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+):
+    """Generate Annex IV zip file for a system - V2 with all documents."""
+    return await _generate_annex_iv_zip_v2(system_id, org, db)
 
 
 @router.get("/export/annex-iv.zip")
@@ -397,6 +406,72 @@ async def _generate_annex_iv_zip(
     artifacts = []
     
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        # Generate all compliance documents using DocumentGenerator
+        # Force reload to avoid cache issues
+        import importlib
+        from app.services import document_generator
+        importlib.reload(document_generator)
+        from app.services.document_generator import DocumentGenerator
+        generator = DocumentGenerator()
+        
+        # Document types to generate with their template mappings
+        document_templates = {
+            "annex_iv": "12_ANNEX_IV.md",
+            "fria": "15_FRIA.md", 
+            "soa": "09_SOA_TEMPLATE.md",
+            "monitoring_report": "06_PM_MONITORING_REPORT.md",
+            "risk_assessment": "01_RISK_ASSESSMENT.md",
+            "model_card": "03_MODEL_CARD.md",
+            "data_sheet": "04_DATA_SHEET.md",
+            "logging_plan": "05_LOGGING_PLAN.md",
+            "human_oversight": "07_HUMAN_OVERSIGHT_SOP.md",
+            "appeals_flow": "08_APPEALS_FLOW.md",
+            "policy_register": "10_POLICY_REGISTER.md",
+            "audit_log": "11_AUDIT_LOG.md",
+            "instructions_for_use": "13_INSTRUCTIONS_FOR_USE.md"
+        }
+        
+        # Generate each document individually
+        logger.info(f"Starting document generation for {len(document_templates)} documents at {datetime.now()}")
+        for doc_type, template_file in document_templates.items():
+            try:
+                logger.info(f"Generating {doc_type} using template {template_file}")
+                # Generate markdown content
+                md_content = generator._generate_document(
+                    template_file=template_file,
+                    system=system,
+                    org=org,
+                    onboarding_data={},
+                    db=db,
+                    doc_type=doc_type
+                )
+                
+                logger.info(f"Document generation result for {doc_type}: {type(md_content)}, length: {len(md_content) if md_content else 0}")
+                
+                if md_content:
+                    logger.info(f"Generated {doc_type}: {len(md_content)} characters")
+                    # Add markdown version
+                    zip_file.writestr(f"{doc_type}.md", md_content)
+                    artifacts.append({
+                        "name": f"{doc_type}.md",
+                        "sha256": hashlib.sha256(md_content.encode()).hexdigest(),
+                        "bytes": len(md_content.encode())
+                    })
+                    logger.info(f"Added {doc_type}.md to ZIP with {len(md_content)} characters")
+                    
+                    # Skip PDF generation for now to focus on the main issue
+                    logger.info(f"Skipping PDF generation for {doc_type}")
+                else:
+                    logger.warning(f"No content generated for {doc_type}")
+                        
+            except Exception as e:
+                logger.error(f"Error generating {doc_type}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                continue
+        
+        logger.info(f"Document generation completed. Total artifacts: {len(artifacts)}")
+        
         # Add system information
         system_info = f"""System ID: {system.id}
 Name: {system.name}
@@ -416,29 +491,62 @@ Created: {system.id}
             "bytes": len(system_info.encode())
         })
 
-        # Add controls
+        # Add controls as CSV
         controls = db.query(Control).filter(Control.system_id == system_id).all()
-        for control in controls:
-            control_info = f"""Control ID: {control.id}
+        if controls:
+            # Create controls CSV
+            import csv
+            controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
+            for control in controls:
+                evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
+                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},{control.implementation_status or 'Not set'},{evidence_links}\n"
+            
+            zip_file.writestr("controls.csv", controls_csv)
+            artifacts.append({
+                "name": "controls.csv",
+                "sha256": hashlib.sha256(controls_csv.encode()).hexdigest(),
+                "bytes": len(controls_csv.encode())
+            })
+            
+            # Also add individual control files for detailed view
+            for control in controls:
+                control_info = f"""Control ID: {control.id}
 Name: {control.name}
 Status: {control.status}
 Due Date: {control.due_date}
 ISO Clause: {control.iso_clause}
 Priority: {control.priority}
+Owner Email: {control.owner_email or 'N/A'}
+Implementation Status: {control.implementation_status or 'Not set'}
+Evidence Links: {', '.join([f'EV-{ev.id}' for ev in control.evidence])}
 """
-            zip_file.writestr(f"controls/{control.id}.txt", control_info)
-            artifacts.append({
-                "name": f"controls/{control.id}.txt",
-                "sha256": hashlib.sha256(control_info.encode()).hexdigest(),
-                "bytes": len(control_info.encode())
-            })
+                zip_file.writestr(f"controls/{control.id}.txt", control_info)
+                artifacts.append({
+                    "name": f"controls/{control.id}.txt",
+                    "sha256": hashlib.sha256(control_info.encode()).hexdigest(),
+                    "bytes": len(control_info.encode())
+                })
 
         # Add evidence (only if any exists)
         evidence = []  # Initialize to avoid undefined variable
         try:
             evidence = db.query(Evidence).filter(Evidence.system_id == system_id).all()
-            for ev in evidence:
-                evidence_info = f"""Evidence ID: {ev.id}
+            if evidence:
+                # Create evidence CSV
+                evidence_csv = "Evidence ID,Label,Control Name,ISO Clause,Uploaded,Status,File Path,Version,Checksum,Uploaded By,Reviewer,Link/Location\n"
+                for ev in evidence:
+                    evidence_csv += f"{ev.id},{ev.label},{ev.control_name},{ev.iso42001_clause},{ev.upload_date},{ev.status},{ev.file_path},{ev.version},{ev.checksum},{ev.uploaded_by},{ev.reviewer_email},{ev.link_or_location}\n"
+                
+                zip_file.writestr("evidence_manifest.csv", evidence_csv)
+                artifacts.append({
+                    "name": "evidence_manifest.csv",
+                    "sha256": hashlib.sha256(evidence_csv.encode()).hexdigest(),
+                    "bytes": len(evidence_csv.encode())
+                })
+                
+                # Also add individual evidence files for detailed view
+                for ev in evidence:
+                    evidence_info = f"""Evidence ID: {ev.id}
 Label: {ev.label}
 Control Name: {ev.control_name}
 ISO Clause: {ev.iso42001_clause}
@@ -451,12 +559,12 @@ Uploaded By: {ev.uploaded_by}
 Reviewer: {ev.reviewer_email}
 Link/Location: {ev.link_or_location}
 """
-                zip_file.writestr(f"evidence/{ev.id}.txt", evidence_info)
-                artifacts.append({
-                    "name": f"evidence/{ev.id}.txt",
-                    "sha256": hashlib.sha256(evidence_info.encode()).hexdigest(),
-                    "bytes": len(evidence_info.encode())
-                })
+                    zip_file.writestr(f"evidence/{ev.id}.txt", evidence_info)
+                    artifacts.append({
+                        "name": f"evidence/{ev.id}.txt",
+                        "sha256": hashlib.sha256(evidence_info.encode()).hexdigest(),
+                        "bytes": len(evidence_info.encode())
+                    })
         except Exception as e:
             logger.warning(f"Could not fetch evidence for system {system_id}: {e}")
             evidence = []  # Ensure evidence is empty list on error
@@ -516,6 +624,188 @@ Link/Location: {ev.link_or_location}
         media_type="application/zip",
         headers={
             "Content-Disposition": f"attachment; filename=annex-iv-system-{system_id}.zip",
+            "X-File-Hash": f"sha256:{file_hash}",
+            "X-File-Size": str(len(zip_content))
+        }
+    )
+
+
+async def _generate_annex_iv_zip_v2(
+    system_id: int,
+    org: Organization,
+    db: Session,
+):
+    """V2: Generate Annex IV zip file with ALL documents - clean implementation."""
+    system = (
+        db.query(AISystem)
+        .filter(AISystem.id == system_id, AISystem.org_id == org.id)
+        .first()
+    )
+    if not system:
+        raise HTTPException(status_code=404, detail="System not found")
+    
+    # Create zip file in memory
+    zip_buffer = BytesIO()
+    artifacts = []
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        # Generate all compliance documents using DocumentGenerator
+        from app.services.document_generator import DocumentGenerator
+        generator = DocumentGenerator()
+        
+        # Document types to generate with their template mappings
+        document_templates = {
+            "annex_iv": "12_ANNEX_IV.md",
+            "fria": "15_FRIA.md", 
+            "soa": "09_SOA_TEMPLATE.md",
+            "monitoring_report": "06_PM_MONITORING_REPORT.md",
+            "risk_assessment": "01_RISK_ASSESSMENT.md",
+            "model_card": "03_MODEL_CARD.md",
+            "data_sheet": "04_DATA_SHEET.md",
+            "logging_plan": "05_LOGGING_PLAN.md",
+            "human_oversight": "07_HUMAN_OVERSIGHT_SOP.md",
+            "appeals_flow": "08_APPEALS_FLOW.md",
+            "policy_register": "10_POLICY_REGISTER.md",
+            "audit_log": "11_AUDIT_LOG.md",
+            "instructions_for_use": "13_INSTRUCTIONS_FOR_USE.md"
+        }
+        
+        # Generate each document individually
+        for doc_type, template_file in document_templates.items():
+            try:
+                # Generate markdown content
+                md_content = generator._generate_document(
+                    template_file=template_file,
+                    system=system,
+                    org=org,
+                    onboarding_data={},
+                    db=db,
+                    doc_type=doc_type
+                )
+                
+                if md_content:
+                    # Add markdown version
+                    zip_file.writestr(f"{doc_type}.md", md_content)
+                    artifacts.append({
+                        "name": f"{doc_type}.md",
+                        "sha256": hashlib.sha256(md_content.encode()).hexdigest(),
+                        "bytes": len(md_content.encode())
+                    })
+                        
+            except Exception as e:
+                logger.error(f"Error generating {doc_type}: {e}")
+                continue
+        
+        # Add system information
+        system_info = f"""System ID: {system.id}
+Name: {system.name}
+Purpose: {system.purpose}
+Domain: {system.domain}
+Owner: {system.owner_email}
+Deployment Context: {system.deployment_context}
+Personal Data Processed: {system.personal_data_processed}
+Impacts Fundamental Rights: {system.impacts_fundamental_rights}
+AI Act Class: {system.ai_act_class}
+Created: {system.id}
+"""
+        zip_file.writestr("system_info.txt", system_info)
+        artifacts.append({
+            "name": "system_info.txt",
+            "sha256": hashlib.sha256(system_info.encode()).hexdigest(),
+            "bytes": len(system_info.encode())
+        })
+
+        # Add controls as CSV
+        controls = db.query(Control).filter(Control.system_id == system_id).all()
+        if controls:
+            # Create controls CSV
+            controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
+            for control in controls:
+                evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
+                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},{control.implementation_status or 'Not set'},{evidence_links}\n"
+            
+            zip_file.writestr("controls.csv", controls_csv)
+            artifacts.append({
+                "name": "controls.csv",
+                "sha256": hashlib.sha256(controls_csv.encode()).hexdigest(),
+                "bytes": len(controls_csv.encode())
+            })
+
+        # Add evidence (only if any exists)
+        evidence = []
+        try:
+            evidence = db.query(Evidence).filter(Evidence.system_id == system_id).all()
+            if evidence:
+                # Create evidence CSV
+                evidence_csv = "Evidence ID,Label,Control Name,ISO Clause,Uploaded,Status,File Path,Version,Checksum,Uploaded By,Reviewer,Link/Location\n"
+                for ev in evidence:
+                    evidence_csv += f"{ev.id},{ev.label},{ev.control_name},{ev.iso42001_clause},{ev.upload_date},{ev.status},{ev.file_path},{ev.version},{ev.checksum},{ev.uploaded_by},{ev.reviewer_email},{ev.link_or_location}\n"
+                
+                zip_file.writestr("evidence_manifest.csv", evidence_csv)
+                artifacts.append({
+                    "name": "evidence_manifest.csv",
+                    "sha256": hashlib.sha256(evidence_csv.encode()).hexdigest(),
+                    "bytes": len(evidence_csv.encode())
+                })
+        except Exception as e:
+            logger.warning(f"Could not fetch evidence for system {system_id}: {e}")
+            evidence = []
+        
+        # Get all document approvals for this system
+        approvals = (
+            db.query(DocumentApproval)
+            .filter(DocumentApproval.system_id == system_id, DocumentApproval.org_id == org.id)
+            .all()
+        )
+        
+        # Generate manifest.json
+        manifest = {
+            "system_id": system_id,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generator_version": "2.0.0",
+            "artifacts": artifacts,
+            "approvals": [
+                {
+                    "doc": approval.doc_type,
+                    "status": approval.status,
+                    "email": approval.approver_email or approval.submitted_by,
+                    "timestamp": (approval.approved_at or approval.submitted_at).isoformat() if (approval.approved_at or approval.submitted_at) else None
+                }
+                for approval in approvals if approval.status in ['submitted', 'approved']
+            ],
+            "sources": [
+                {
+                    "doc": "annex_iv",
+                    "evidence": [
+                        {
+                            "id": ev.id,
+                            "sha256": ev.checksum or "N/A"
+                        }
+                        for ev in evidence if ev.checksum
+                    ]
+                }
+            ]
+        }
+        
+        manifest_json = json.dumps(manifest, indent=2)
+        zip_file.writestr("manifest.json", manifest_json)
+        artifacts.append({
+            "name": "manifest.json",
+            "sha256": hashlib.sha256(manifest_json.encode()).hexdigest(),
+            "bytes": len(manifest_json.encode())
+        })
+
+    zip_buffer.seek(0)
+    zip_content = zip_buffer.getvalue()
+    
+    # Calculate hash for integrity
+    file_hash = hashlib.sha256(zip_content).hexdigest()
+    
+    return StreamingResponse(
+        BytesIO(zip_content),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename=annex-iv-system-{system_id}-v2.zip",
             "X-File-Hash": f"sha256:{file_hash}",
             "X-File-Size": str(len(zip_content))
         }

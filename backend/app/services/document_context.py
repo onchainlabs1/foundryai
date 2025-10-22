@@ -111,7 +111,11 @@ class DocumentContextService:
                 "primary_contact_email": org.primary_contact_email or "contact@company.com",
                 "dpo_contact_name": org.dpo_contact_name or "DPO",
                 "dpo_contact_email": org.dpo_contact_email or "dpo@company.com",
-                "org_role": org.org_role or "deployer"
+                "org_role": org.org_role or "deployer",
+                "dpia_link": system.dpia_link or "",
+                "dpia_status": getattr(system, 'dpia_status', '') or "",
+                "is_gpai": system.is_general_purpose_ai or False,
+                "uses_generative_model": system.uses_gpai or False
             },
             
             # System
@@ -135,7 +139,11 @@ class DocumentContextService:
                 "biometrics_in_public": system.biometrics_in_public or False,
                 "annex3_categories": system.annex3_categories or "[]",
                 "impacted_groups": system.impacted_groups or "Internal users",
-                "requires_fria": self._compute_requires_fria(system)
+                "requires_fria": self._compute_requires_fria(system),
+                "dpia_link": system.dpia_link or "",
+                "dpia_status": getattr(system, 'dpia_status', '') or "",
+                "is_gpai": system.is_general_purpose_ai or False,
+                "uses_generative_model": system.uses_gpai or False
             },
             
             # Risks

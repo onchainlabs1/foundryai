@@ -8,13 +8,22 @@ def classify_ai_act(system_data: dict) -> str:
     Returns:
         Risk classification: one of {"high", "limited", "minimal", "prohibited"}
     """
+    # Prohibited AI systems (Art. 5)
     if system_data.get("uses_biometrics") and system_data.get("deployment_context") == "public":
         return "high"
+    
+    # High-risk AI systems (Art. 6, Annex III)
     if system_data.get("impacts_fundamental_rights"):
         return "high"
+    
+    # Check for Annex III categories
+    if system_data.get("personal_data_processed") and system_data.get("impacts_fundamental_rights"):
+        return "high"
+    
     # GPAI is tracked separately via is_gpai; classification remains in 4-class set
     if system_data.get("is_general_purpose_ai"):
         return "limited"
+    
     return "minimal"
 
 

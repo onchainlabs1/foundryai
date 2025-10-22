@@ -27,7 +27,12 @@ const companySchema = z.object({
   primaryContactName: z.string().optional(),
   dpoContactName: z.string().optional(),
   dpoContactEmail: z.string().email('Valid email required').optional().or(z.literal('')),
-  orgRole: z.enum(['provider', 'deployer', 'both']).optional()
+  orgRole: z.enum(['provider', 'deployer', 'both']).optional(),
+  // Critical fields for launch
+  dpiaLink: z.string().optional(),
+  dpiaStatus: z.string().optional().or(z.undefined()),
+  isGpai: z.boolean().optional(),
+  usesGenerativeModel: z.boolean().optional()
 })
 
 type CompanyFormData = z.infer<typeof companySchema>
@@ -65,6 +70,14 @@ const countries = [
   'Slovenia', 'Spain', 'Sweden', 'United Kingdom', 'United States', 'Canada'
 ]
 
+const dpiaOptions = [
+  { value: 'em_andamento', label: '🔄 DPIA em andamento' },
+  { value: 'nao_aplicavel', label: '❌ N/A - Não processa dados pessoais' },
+  { value: 'planejado', label: '📅 Será conduzido antes do deploy' },
+  { value: 'concluido', label: '✅ DPIA já concluído' },
+  { value: 'nao_necessario', label: 'ℹ️ Não necessário para este sistema' }
+]
+
 export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   
@@ -88,7 +101,11 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
       primaryContactName: data?.primaryContactName || '',
       dpoContactName: data?.dpoContactName || '',
       dpoContactEmail: data?.dpoContactEmail || '',
-      orgRole: data?.orgRole || undefined
+      orgRole: data?.orgRole || undefined,
+      dpiaLink: data?.dpiaLink || '',
+      dpiaStatus: data?.dpiaStatus || undefined,
+      isGpai: data?.isGpai || false,
+      usesGenerativeModel: data?.usesGenerativeModel || false
     }
   })
 
@@ -424,6 +441,109 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
             </motion.div>
           </CardContent>
         </Card>
+
+        {/* Critical Compliance Fields */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.95 }}
+        >
+          <Card className="border-amber-200 bg-amber-50">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg text-amber-800 flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Critical Compliance Fields
+              </CardTitle>
+              <CardDescription className="text-amber-700">
+                Required for EU AI Act compliance and audit readiness
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* DPIA Status */}
+              <div className="space-y-3">
+                <Label htmlFor="dpiaStatus" className="text-sm font-semibold text-amber-800">
+                  DPIA Status <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={watch('dpiaStatus') || undefined}
+                  onValueChange={(value) => setValue('dpiaStatus', value)}
+                >
+                  <SelectTrigger className="bg-background/50 border-amber-200 focus:border-amber-400">
+                    <SelectValue placeholder="Selecione o status do DPIA..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dpiaOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-amber-600">
+                  Data Protection Impact Assessment (GDPR Art. 35) - selecione o status atual
+                </p>
+                {errors.dpiaStatus && (
+                  <p className="text-xs text-red-500">{errors.dpiaStatus.message}</p>
+                )}
+              </div>
+
+              {/* DPIA Link (condicional) */}
+              {watch('dpiaStatus') === 'concluido' && (
+                <div className="space-y-3">
+                  <Label htmlFor="dpiaLink" className="text-sm font-semibold text-amber-800">
+                    DPIA Link (opcional)
+                  </Label>
+                  <Input
+                    id="dpiaLink"
+                    {...register('dpiaLink')}
+                    placeholder="https://example.com/dpia ou referência interna"
+                    className="bg-background/50 border-amber-200 focus:border-amber-400"
+                  />
+                  <p className="text-xs text-amber-600">
+                    Link ou referência para o DPIA concluído (opcional)
+                  </p>
+                </div>
+              )}
+
+              {/* GPAI Classification */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="isGpai" className="text-sm font-semibold text-amber-800">
+                      General Purpose AI (GPAI)
+                    </Label>
+                    <p className="text-xs text-amber-600">
+                      Is your organization developing/deploying GPAI systems?
+                    </p>
+                  </div>
+                  <Switch
+                    id="isGpai"
+                    checked={watch('isGpai')}
+                    onCheckedChange={(checked) => setValue('isGpai', checked)}
+                    className="data-[state=checked]:bg-amber-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="usesGenerativeModel" className="text-sm font-semibold text-amber-800">
+                      Uses Generative Models
+                    </Label>
+                    <p className="text-xs text-amber-600">
+                      Does your system use generative AI models (LLMs, image generators, etc.)?
+                    </p>
+                  </div>
+                  <Switch
+                    id="usesGenerativeModel"
+                    checked={watch('usesGenerativeModel')}
+                    onCheckedChange={(checked) => setValue('usesGenerativeModel', checked)}
+                    className="data-[state=checked]:bg-amber-500"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* ISO Coverage Info */}
         <motion.div

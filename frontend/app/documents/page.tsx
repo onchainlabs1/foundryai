@@ -103,49 +103,23 @@ export default function DocumentsPage() {
     try {
       setGenerating(true)
       setError(null)
-      
-      // Get onboarding data from backend (primary source)
-      let onboardingData = null
-      let dataSource = 'backend'
-      
-      try {
-        const response = await api.getOnboardingData(systemId)
-        onboardingData = response.data
-        if (!onboardingData) {
-          console.warn('No onboarding data found in backend for system', systemId)
-          dataSource = 'none'
-        }
-      } catch (err) {
-        console.warn('Could not fetch onboarding data from backend:', err)
-        dataSource = 'none'
-      }
-      
-      // No localStorage fallback - only use backend data
-      
-      // If still no data, block generation with clear error message
-      if (!onboardingData) {
-        const errorMsg = '❌ Cannot generate documents: No onboarding data available. Please complete the onboarding process first to ensure accurate compliance documents.'
-        setError(errorMsg)
-        toast({
-          title: "Document Generation Blocked",
-          description: "No onboarding data found. Please complete the onboarding process first.",
-          variant: "destructive",
-        })
-        return
-      }
-      
-      // Data source validation - only backend data is trusted
-      
-      const response = await api.generateSystemDocuments(systemId, onboardingData)
-      
-      if (response.status === 'success') {
-        // Clear any previous warnings on success
+
+      // Backend already handles defaults when onboarding data is missing,
+      // so we call generation directly and surface precise backend errors.
+      const response = await api.generateSystemDocuments(systemId)
+
+      if (response.status === 'success' || response.status === 'success_with_warnings') {
         setError(null)
-        // Reload documents after generation
         await loadDocuments(systemId)
+        const desc = response.status === 'success_with_warnings' && response.warnings?.length
+          ? response.warnings.join(' ')
+          : 'Your compliance documents are ready.'
+        toast({ title: 'Documents generated', description: desc })
       }
-    } catch (err) {
-      setError('Failed to generate documents')
+    } catch (err: any) {
+      const message = err?.message || 'Failed to generate documents'
+      setError(message)
+      toast({ title: 'Failed to generate documents', description: message, variant: 'destructive' })
       console.error('Error generating documents:', err)
     } finally {
       setGenerating(false)
@@ -284,7 +258,7 @@ export default function DocumentsPage() {
                   <AlertCircle className="h-5 w-5 mr-2" />
                   <span>{error}</span>
                 </div>
-                {error.includes('No onboarding data available') && (
+                {error.includes('No onboarding data') && (
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -292,6 +266,26 @@ export default function DocumentsPage() {
                     className="ml-4"
                   >
                     Go to Onboarding
+                  </Button>
+                )}
+                {error.toLowerCase().includes('fria') && selectedSystem && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = `/systems/${selectedSystem}?tab=risk-fria`}
+                    className="ml-2"
+                  >
+                    Complete FRIA
+                  </Button>
+                )}
+                {error.toLowerCase().includes('api key') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.reload()}
+                    className="ml-2"
+                  >
+                    Refresh Session
                   </Button>
                 )}
               </div>

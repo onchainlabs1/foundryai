@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
-import { api } from '@/lib/api'
+import { api, downloadFile } from '@/lib/api'
 import { 
   Database, 
   Search, 
@@ -387,7 +387,18 @@ export default function InventoryPage() {
                                 View
                               </Button>
                             </Link>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await downloadFile(`/reports/annex-iv/${system.id}`, 'annex-iv-complete.zip');
+                                } catch (error) {
+                                  console.error('Download failed:', error);
+                                  alert('Download failed. Please check your API key.');
+                                }
+                              }}
+                            >
                               <Download className="h-4 w-4" />
                             </Button>
                           </div>

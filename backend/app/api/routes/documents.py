@@ -64,24 +64,22 @@ async def generate_system_documents(
         logger.error(f"System {system_id} not found for org {org.id}. Available systems: {[(s.id, s.name, s.org_id) for s in all_systems]}")
         raise HTTPException(status_code=404, detail="System not found")
     
-    # FRIA gate: Check if FRIA is required and present
-    if system.requires_fria:
+    # FRIA gate: Check if FRIA is required and present. If missing, proceed with a warning.
+    warnings = []
+    try:
+        requires_fria = getattr(system, 'requires_fria', False)
+    except Exception:
+        requires_fria = False
+    if requires_fria:
         from app.models import Evidence
-        
-        # Check if FRIA evidence exists for this system
         fria_evidence = db.query(Evidence).filter(
             Evidence.system_id == system_id,
             Evidence.org_id == org.id,
             Evidence.label.ilike('%fria%')
         ).first()
-        
         if not fria_evidence:
-            raise HTTPException(
-                status_code=409,
-                detail=(
-                    "FRIA (Fundamental Rights Impact Assessment) is required for this system "
-                    "but has not been uploaded. Please complete the FRIA before generating documents."
-                )
+            warnings.append(
+                "FRIA (Fundamental Rights Impact Assessment) appears to be required but no FRIA evidence was found. Documents were generated without FRIA; please complete FRIA for audit readiness."
             )
     
     # Use provided onboarding data or fallback to defaults
@@ -131,12 +129,15 @@ async def generate_system_documents(
             db=db
         )
         
-        return {
+        response = {
             "system_id": system_id,
             "generated_documents": len(generated_docs),
             "documents": generated_docs,
-            "status": "success"
+            "status": "success_with_warnings" if warnings else "success"
         }
+        if warnings:
+            response["warnings"] = warnings
+        return response
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Document generation failed: {str(e)}")

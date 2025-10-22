@@ -205,15 +205,16 @@ This system falls under the following high-risk AI system categories:
 {% endif %}
 
 ### 10.2 GDPR Compliance
-{% if system.personal_data_processed and system.dpia_link %}
-- **DPIA Conducted:** Yes
-- **DPIA Reference:** {{ system.dpia_link }}
-- **Compliance:** GDPR Article 35 (Data Protection Impact Assessment)
-{% elif system.personal_data_processed %}
+{% if system.personal_data_processed %}
 - **DPIA Required:** Yes (sensitive personal data processing)
-- **DPIA Status:** To be conducted
+- **DPIA Status:** {{ system.dpia_status|title if system.dpia_status else 'Not specified' }}
+{% if system.dpia_link %}
+- **DPIA Reference:** {{ system.dpia_link }}
+{% endif %}
+- **Compliance:** GDPR Article 35 (Data Protection Impact Assessment)
 {% else %}
 - **DPIA Required:** No (no personal data processing)
+- **DPIA Status:** Not applicable
 {% endif %}
 
 ### 10.3 Compliance Summary

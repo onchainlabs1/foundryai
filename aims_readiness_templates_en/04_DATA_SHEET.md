@@ -40,11 +40,13 @@ generated_at: "{{ metadata.generated_at }}"
 
 {% if system.personal_data_processed %}
 **Lawful Basis:** Legitimate business interest / Consent / Contract performance  
-{% if system.dpia_link %}**DPIA Link:** {{ system.dpia_link }}{% else %}**DPIA Status:** {{ 'Required' if system.impacts_fundamental_rights else 'Not required' }}{% endif %}  
+**DPIA Status:** {{ system.dpia_status|title if system.dpia_status else 'Not specified' }}
+{% if system.dpia_link %}**DPIA Link:** {{ system.dpia_link }}{% endif %}  
 **Access Controls:** Role-based access control (RBAC)  
 **Retention:** {{ pmm.retention_months if pmm else '36' }} months
 {% else %}
 **Privacy Impact:** No personal data processed
+**DPIA Status:** Not applicable
 {% endif %}
 
 ## Representativeness & Bias

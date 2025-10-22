@@ -120,7 +120,8 @@ export const api = {
   // Reports
   getReportSummary: () => apiRequest('/reports/summary'),
   getReportScore: () => apiRequest('/reports/score'),
-  getBlockingIssues: () => apiRequest('/reports/blocking-issues'),
+  // Deprecated: getBlockingIssues → use getOrgBlockingIssues
+  getBlockingIssues: () => apiRequest('/reports/blocking-issues/org'),
   getUpcomingDeadlines: () => apiRequest('/reports/upcoming-deadlines'),
   
   // FRIA
