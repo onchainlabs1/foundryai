@@ -392,7 +392,7 @@ export default function InventoryPage() {
                               size="sm"
                               onClick={async () => {
                                 try {
-                                  await downloadFile(`/reports/annex-iv/${system.id}`, 'annex-iv-complete.zip');
+                                  await downloadFile(`/reports/annex-iv-complete/${system.id}`, 'annex-iv-complete.zip');
                                 } catch (error) {
                                   console.error('Download failed:', error);
                                   alert('Download failed. Please check your API key.');
