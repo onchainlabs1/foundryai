@@ -13,7 +13,7 @@ from app.api.routes.reports import (
     get_summary,
     get_upcoming_deadlines,
 )
-from app.services.blocking_issues import get_org_blocking_issues as get_blocking_issues
+from app.api.routes.reports import get_org_blocking_issues as get_blocking_issues
 from app.models import AISystem, Control, Incident, Organization
 
 

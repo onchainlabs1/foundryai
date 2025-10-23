@@ -392,22 +392,7 @@ export default function InventoryPage() {
                               size="sm"
                               onClick={async () => {
                                 try {
-                                  // Download the pre-generated audit-ready ZIP
-                                  const response = await fetch('/AUDIT-READY-1.zip');
-                                  
-                                  if (!response.ok) {
-                                    throw new Error('Failed to download ZIP');
-                                  }
-                                  
-                                  const blob = await response.blob();
-                                  const url = window.URL.createObjectURL(blob);
-                                  const a = document.createElement('a');
-                                  a.href = url;
-                                  a.download = `audit-ready-${system.id}.zip`;
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  window.URL.revokeObjectURL(url);
-                                  document.body.removeChild(a);
+                                  await downloadFile(`/reports/annex-iv-complete/${system.id}`, `audit-ready-${system.id}.zip`);
                                 } catch (error) {
                                   console.error('Download failed:', error);
                                   alert('Download failed. Please check your API key.');

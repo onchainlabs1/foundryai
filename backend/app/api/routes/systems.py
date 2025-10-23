@@ -115,17 +115,10 @@ async def update_system(
 @router.post("", response_model=AISystemResponse)
 async def create_system(
     system: AISystemCreate,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Create a new AI system."""
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     db_system = AISystem(**system.model_dump(), org_id=org.id)
 
@@ -253,21 +246,13 @@ def list_controls(
 async def save_onboarding_data(
     system_id: int,
     onboarding_data: dict,
-    x_api_key: str = Header(None),
+    org: Organization = Depends(verify_api_key),
     db: Session = Depends(get_db),
 ):
     """Save onboarding data for a system."""
     import json
 
     from app.models import OnboardingData
-    
-    # Verify API key and get organization
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-    
-    org = db.query(Organization).filter(Organization.api_key == x_api_key).first()
-    if not org:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     
     # Check if system exists and belongs to org
     system = db.query(AISystem).filter(
