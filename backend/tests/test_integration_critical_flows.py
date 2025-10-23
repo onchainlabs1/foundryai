@@ -154,6 +154,7 @@ def test_annex_iv_export_integrity():
     
     # Verify hash matches content
     import hashlib
+from tests.conftest import create_test_system
     content_hash = hashlib.sha256(response.content).hexdigest()
     expected_hash = response.headers["X-File-Hash"].replace("sha256:", "")
     assert content_hash == expected_hash

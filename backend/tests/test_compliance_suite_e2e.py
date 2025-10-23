@@ -132,6 +132,7 @@ def seeded_org_and_system(client):
     
     # Create incidents directly in database
     from datetime import datetime, timezone
+from tests.conftest import create_test_system
 
     
     db = SessionLocal()
@@ -224,7 +225,7 @@ class TestComplianceSuiteE2E:
         
         for format_type in formats:
             response = client.get(
-                f"/export/annex_iv.{format_type}",
+                f"/reports/export/annex_iv.{format_type}",
                 params={"system_id": system_id},
                 headers={"X-API-Key": api_key}
             )
@@ -257,7 +258,7 @@ class TestComplianceSuiteE2E:
         
         for format_type in formats:
             response = client.get(
-                f"/export/fria.{format_type}",
+                f"/reports/export/fria.{format_type}",
                 params={"system_id": system_id},
                 headers={"X-API-Key": api_key}
             )
@@ -341,7 +342,7 @@ class TestComplianceSuiteE2E:
         assert response.status_code == 401
         
         # Test export without auth
-        response = client.get(f"/export/annex_iv.md?system_id={system_id}")
+        response = client.get(f"/reports/export/annex_iv.md?system_id={system_id}")
         assert response.status_code == 401
         
         # Test evidence viewer without auth
@@ -364,7 +365,7 @@ class TestComplianceSuiteE2E:
         
         # Test invalid document type in export
         response = client.get(
-            "/export/invalid_doc.md",
+            "/reports/export/invalid_doc.md",
             params={"system_id": system_id},
             headers={"X-API-Key": api_key}
         )
@@ -377,7 +378,7 @@ class TestComplianceSuiteE2E:
         
         # Test invalid format
         response = client.get(
-            "/export/annex_iv.invalid",
+            "/reports/export/annex_iv.invalid",
             params={"system_id": system_id},
             headers={"X-API-Key": api_key}
         )
@@ -398,7 +399,7 @@ class TestComplianceSuiteE2E:
         
         # Test export with invalid system
         response = client.get(
-            "/export/annex_iv.md",
+            "/reports/export/annex_iv.md",
             params={"system_id": invalid_system_id},
             headers={"X-API-Key": api_key}
         )
@@ -468,7 +469,7 @@ class TestComplianceSuiteE2E:
         for draft in drafts:
             doc_type = draft["type"]
             response = client.get(
-                f"/export/{doc_type}.md",
+                f"/reports/export/{doc_type}.md",
                 params={"system_id": system_id},
                 headers={"X-API-Key": api_key}
             )

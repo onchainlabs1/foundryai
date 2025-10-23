@@ -42,7 +42,7 @@ def test_system_for_zip(db_session):
     db_session.add(org)
     db_session.commit()
     
-    system = AISystem(
+    system = create_test_system(
         org_id=org.id,
         name="ZIP Test System",
         purpose="Testing ZIP manifest generation",
@@ -158,6 +158,7 @@ async def test_zip_manifest_generation(db_session, test_system_for_zip):
         
         # Test 10: Timestamp is ISO format
         from datetime import datetime
+from tests.conftest import create_test_system
         datetime.fromisoformat(manifest["generated_at"])  # Will raise if invalid
         print(f"✅ TEST 10 PASSED: Timestamp is valid ISO format")
     

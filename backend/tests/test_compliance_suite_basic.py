@@ -25,7 +25,7 @@ class TestComplianceSuiteBasic:
     
     def test_export_document_requires_auth(self):
         """Test that document export requires authentication."""
-        response = client.get("/export/annex_iv.md?system_id=1")
+        response = client.get("/reports/export/annex_iv.md?system_id=1")
         
         assert response.status_code == 401
         assert response.headers.get("WWW-Authenticate") == "API-Key"
@@ -33,7 +33,7 @@ class TestComplianceSuiteBasic:
     def test_export_document_invalid_type(self):
         """Test export with invalid document type."""
         response = client.get(
-            "/export/invalid_type.md?system_id=1",
+            "/reports/export/invalid_type.md?system_id=1",
             headers={"X-API-Key": "dev-aims-demo-key"}
         )
         
@@ -43,7 +43,7 @@ class TestComplianceSuiteBasic:
     def test_export_document_invalid_format(self):
         """Test export with invalid format."""
         response = client.get(
-            "/export/annex_iv.invalid?system_id=1",
+            "/reports/export/annex_iv.invalid?system_id=1",
             headers={"X-API-Key": "dev-aims-demo-key"}
         )
         

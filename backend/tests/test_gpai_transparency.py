@@ -9,7 +9,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base
-from app.models import Organization, AISystem, AIRisk, Oversight, PMM
+from app.models import Organization, AISystem
+from tests.conftest import create_test_system, AIRisk, Oversight, PMM
 from app.services.document_generator import DocumentGenerator
 
 
@@ -44,7 +45,7 @@ def test_gpai_system_generates_transparency_notice(db_session):
     db_session.commit()
     
     # System WITH uses_gpai=True
-    gpai_system = AISystem(
+    gpai_system = create_test_system(
         org_id=org.id,
         name="GPAI Content Generator",
         purpose="AI-powered content generation using large language models",
@@ -149,7 +150,7 @@ def test_non_gpai_system_no_transparency_notice(db_session, tmp_path, monkeypatc
     db_session.commit()
     
     # System WITHOUT uses_gpai
-    non_gpai_system = AISystem(
+    non_gpai_system = create_test_system(
         org_id=org.id,
         name="Simple Rule-Based System",
         purpose="Rule-based decision system",

@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.database import Base
-from app.models import Organization
+from app.models import Organization, AISystem
 
 # Use in-memory SQLite for faster tests
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -31,6 +31,27 @@ def db_session() -> Session:
     finally:
         session.close()
         Base.metadata.drop_all(bind=engine)
+
+
+def create_test_system(org_id: int, **kwargs) -> AISystem:
+    """
+    Helper function to create AISystem with all required fields.
+    """
+    defaults = {
+        'name': 'Test System',
+        'org_id': org_id,
+        'ai_act_class': 'limited',
+        'impacts_fundamental_rights': False,
+        'personal_data_processed': False,
+        'uses_biometrics': False,
+        'is_general_purpose_ai': False,
+        'processes_sensitive_data': False,
+        'uses_gpai': False,
+        'biometrics_in_public': False,
+        'requires_fria': False,
+    }
+    defaults.update(kwargs)
+    return AISystem(**defaults)
 
 
 @pytest.fixture(scope="function")
@@ -63,7 +84,7 @@ def test_org_with_systems(db_session: Session, test_org_with_key: dict) -> dict:
     from app.models import AISystem
     
     systems = [
-        AISystem(
+        create_test_system(
             org_id=test_org_with_key["org_id"],
             name="Test High Risk System",
             purpose="Testing high-risk AI system",
@@ -71,9 +92,12 @@ def test_org_with_systems(db_session: Session, test_org_with_key: dict) -> dict:
             deployment_context="public",
             ai_act_class="high-risk",
             is_gpai=False,
-            role="provider"
+            role="provider",
+            impacts_fundamental_rights=True,
+            personal_data_processed=True,
+            requires_fria=True
         ),
-        AISystem(
+        create_test_system(
             org_id=test_org_with_key["org_id"],
             name="Test GPAI System",
             purpose="Testing GPAI system",
@@ -81,7 +105,9 @@ def test_org_with_systems(db_session: Session, test_org_with_key: dict) -> dict:
             deployment_context="internal",
             ai_act_class="limited-risk",
             is_gpai=True,
-            role="provider"
+            role="provider",
+            is_general_purpose_ai=True,
+            uses_gpai=True
         )
     ]
     

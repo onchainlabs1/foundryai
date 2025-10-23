@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base
 from app.models import Organization, AISystem, DocumentApproval
+from tests.conftest import create_test_system
 from app.api.routes.approvals import (
     submit_document_for_review,
     approve_document,
@@ -44,11 +45,13 @@ def test_system(db_session):
     db_session.add(org)
     db_session.commit()
     
-    system = AISystem(
+    system = create_test_system(
         org_id=org.id,
         name="Approval Test System",
         purpose="Testing approvals workflow",
-        ai_act_class="high-risk"
+        ai_act_class="high-risk",
+        impacts_fundamental_rights=True,
+        requires_fria=True
     )
     db_session.add(system)
     db_session.commit()

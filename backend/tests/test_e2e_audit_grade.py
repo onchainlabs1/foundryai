@@ -28,6 +28,7 @@ from app.models import (
 )
 from app.services.document_generator import DocumentGenerator
 from app.services.blocking_issues import BlockingIssuesService
+from tests.conftest import create_test_system
 
 
 @pytest.fixture
@@ -69,7 +70,7 @@ def test_complete_audit_grade_workflow(db_session):
     
     # STEP 2: Create AI System
     print("\n🤖 STEP 2: Create AI System")
-    system = AISystem(
+    system = create_test_system(
         org_id=org.id,
         name="Employment Screening AI",
         purpose="Automated candidate screening and ranking for employment decisions",

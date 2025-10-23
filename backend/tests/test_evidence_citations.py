@@ -11,6 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base
 from app.models import Organization, AISystem, Control, Evidence
 from app.services.document_generator import DocumentGenerator
+from tests.conftest import create_test_system
 
 
 @pytest.fixture
@@ -41,7 +42,7 @@ def system_with_evidence_links(db_session):
     db_session.add(org)
     db_session.commit()
     
-    system = AISystem(
+    system = create_test_system(
         org_id=org.id,
         name="Evidence Linking Test System",
         purpose="Testing evidence citations",

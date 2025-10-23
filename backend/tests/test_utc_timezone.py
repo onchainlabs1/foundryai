@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from app.database import SessionLocal
 from app.models import FRIA, AISystem, Control, Incident, Organization
+from tests.conftest import create_test_system
 
 
 class TestUTCTimezone:
@@ -52,7 +53,7 @@ class TestUTCTimezone:
             db.commit()
             
             # Create AI system
-            system = AISystem(
+            system = create_test_system(
                 org_id=org.id,
                 name="Test System",
                 purpose="Testing UTC timezone"
@@ -79,7 +80,7 @@ class TestUTCTimezone:
             db.add(org)
             db.commit()
             
-            system = AISystem(
+            system = create_test_system(
                 org_id=org.id,
                 name="Test System",
                 purpose="Testing UTC timezone"
@@ -117,7 +118,7 @@ class TestUTCTimezone:
             db.add(org)
             db.commit()
             
-            system = AISystem(
+            system = create_test_system(
                 org_id=org.id,
                 name="Test System",
                 purpose="Testing UTC timezone"
@@ -154,7 +155,7 @@ class TestUTCTimezone:
             db.add(org)
             db.commit()
             
-            system = AISystem(
+            system = create_test_system(
                 org_id=org.id,
                 name="Test System",
                 purpose="Testing UTC timezone"

@@ -11,6 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base
 from app.models import Organization, AISystem, AIRisk, Control, Oversight, PMM, Evidence, FRIA
 from app.services.document_context import DocumentContextService
+from tests.conftest import create_test_system
 
 
 @pytest.fixture
@@ -48,7 +49,7 @@ def test_org(db_session):
 @pytest.fixture
 def test_system(db_session, test_org):
     """Create test AI system."""
-    system = AISystem(
+    system = create_test_system(
         org_id=test_org.id,
         name="Test AI System",
         purpose="Testing document generation",
@@ -294,7 +295,7 @@ def test_requires_fria_computation(db_session, test_org):
     service = DocumentContextService(db_session)
     
     # System with fundamental rights impact
-    system1 = AISystem(
+    system1 = create_test_system(
         org_id=test_org.id,
         name="System 1",
         impacts_fundamental_rights=True,
@@ -304,7 +305,7 @@ def test_requires_fria_computation(db_session, test_org):
     db_session.commit()
     
     # System with biometrics
-    system2 = AISystem(
+    system2 = create_test_system(
         org_id=test_org.id,
         name="System 2",
         uses_biometrics=True,
@@ -314,7 +315,7 @@ def test_requires_fria_computation(db_session, test_org):
     db_session.commit()
     
     # System with high-risk classification
-    system3 = AISystem(
+    system3 = create_test_system(
         org_id=test_org.id,
         name="System 3",
         ai_act_class="high-risk"
@@ -323,7 +324,7 @@ def test_requires_fria_computation(db_session, test_org):
     db_session.commit()
     
     # System that doesn't require FRIA
-    system4 = AISystem(
+    system4 = create_test_system(
         org_id=test_org.id,
         name="System 4",
         ai_act_class="minimal"

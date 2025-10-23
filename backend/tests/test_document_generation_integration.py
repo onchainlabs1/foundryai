@@ -48,7 +48,7 @@ def test_org(db_session):
 @pytest.fixture
 def complete_system(db_session, test_org):
     """Create a complete test system with all data."""
-    system = AISystem(
+    system = create_test_system(
         org_id=test_org.id,
         name="Risk Assessment AI",
         purpose="Automated risk scoring for financial applications",
@@ -266,6 +266,7 @@ def test_pmm_generation_with_monitoring_data(db_session, test_org, complete_syst
     
     # Read the generated PMM report
     from pathlib import Path
+from tests.conftest import create_test_system
     output_dir = Path(__file__).parent.parent / "generated_documents"
     pmm_path = output_dir / f"org_{test_org.id}" / f"system_{complete_system.id}" / "monitoring_report.md"
     

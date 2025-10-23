@@ -16,6 +16,7 @@ os.environ["SECRET_KEY"] = "dev-secret-key-for-development-only"
 from app.database import get_db
 from app.main import app
 from app.models import AISystem, Base, Organization
+from tests.conftest import create_test_system
 
 # Create in-memory SQLite database for tests
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_security.db"
@@ -48,7 +49,7 @@ def setup_database():
         db.refresh(org)
         
         # Create test system
-        system = AISystem(
+        system = create_test_system(
             name="Test Security System",
             org_id=org.id,
             purpose="Test system for security tests",
@@ -306,7 +307,7 @@ class TestAPISecurity:
             db.commit()
             db.refresh(other_org)
             
-            other_system = AISystem(
+            other_system = create_test_system(
                 name="Other System",
                 org_id=other_org.id,
                 purpose="Other organization's system",
