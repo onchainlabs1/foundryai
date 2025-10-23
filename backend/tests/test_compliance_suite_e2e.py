@@ -40,23 +40,27 @@ def seeded_org_and_system(client):
     finally:
         db.close()
     
-    # Create AI system
-    system_data = {
-        "name": "Test AI System",
-        "purpose": "Testing compliance suite functionality",
-        "domain": "testing",
-        "deployment_context": "public",
-        "ai_act_class": "high-risk",
-        "is_gpai": True,
-        "role": "provider"
-    }
-    system_response = client.post(
-        "/systems", 
-        json=system_data,
-        headers={"X-API-Key": "test-compliance-key"}
-    )
-    assert system_response.status_code in [200, 201], f"Expected 200 or 201, got {system_response.status_code}"
-    system_id = system_response.json()["id"]
+    # Create AI system directly in database with all required fields
+    from tests.conftest import create_test_system
+    
+    db = SessionLocal()
+    try:
+        system = create_test_system(
+            org_id=org_id,
+            name="Test AI System",
+            purpose="Testing compliance suite functionality",
+            domain="testing",
+            deployment_context="public",
+            ai_act_class="high-risk",
+            uses_gpai=True,
+            system_role="provider"
+        )
+        db.add(system)
+        db.commit()
+        db.refresh(system)
+        system_id = system.id
+    finally:
+        db.close()
     
     # Create evidence directly in database
     evidence_ids = []
