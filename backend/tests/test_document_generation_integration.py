@@ -11,6 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base
 from app.models import Organization, AISystem, AIRisk, Control, Oversight, PMM, Evidence
 from app.services.document_generator import DocumentGenerator
+from tests.conftest import create_test_system
 
 
 @pytest.fixture
@@ -266,7 +267,7 @@ def test_pmm_generation_with_monitoring_data(db_session, test_org, complete_syst
     
     # Read the generated PMM report
     from pathlib import Path
-from tests.conftest import create_test_system
+    
     output_dir = Path(__file__).parent.parent / "generated_documents"
     pmm_path = output_dir / f"org_{test_org.id}" / f"system_{complete_system.id}" / "monitoring_report.md"
     

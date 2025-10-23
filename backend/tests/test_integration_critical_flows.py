@@ -16,6 +16,7 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base, get_db
 from app.main import app
 from app.models import Action, AISystem, Organization
+from tests.conftest import create_test_system
 
 # Create in-memory SQLite database for tests
 test_engine = create_engine(
@@ -154,7 +155,7 @@ def test_annex_iv_export_integrity():
     
     # Verify hash matches content
     import hashlib
-from tests.conftest import create_test_system
+    
     content_hash = hashlib.sha256(response.content).hexdigest()
     expected_hash = response.headers["X-File-Hash"].replace("sha256:", "")
     assert content_hash == expected_hash

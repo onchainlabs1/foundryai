@@ -505,7 +505,9 @@ Created: {system.id}
             import csv
             controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
             for control in controls:
-                evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
+                # Get evidence linked to this control
+                evidence = db.query(Evidence).filter(Evidence.control_id == control.id).all()
+                evidence_links = ", ".join([f"EV-{ev.id}" for ev in evidence])
                 controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},Not set,{evidence_links}\n"
             
             zip_file.writestr("controls.csv", controls_csv)
@@ -525,7 +527,7 @@ ISO Clause: {control.iso_clause}
 Priority: {control.priority}
 Owner Email: {control.owner_email or 'N/A'}
 Implementation Status: Not set
-Evidence Links: {', '.join([f'EV-{ev.id}' for ev in control.evidence])}
+    Evidence Links: {', '.join([f'EV-{ev.id}' for ev in db.query(Evidence).filter(Evidence.control_id == control.id).all()])}
 """
                 zip_file.writestr(f"controls/{control.id}.txt", control_info)
                 artifacts.append({
@@ -728,7 +730,9 @@ Created: {system.id}
             # Create controls CSV
             controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
             for control in controls:
-                evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
+                # Get evidence linked to this control
+                evidence = db.query(Evidence).filter(Evidence.control_id == control.id).all()
+                evidence_links = ", ".join([f"EV-{ev.id}" for ev in evidence])
                 controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},Not set,{evidence_links}\n"
             
             zip_file.writestr("controls.csv", controls_csv)
@@ -910,7 +914,9 @@ Created: {system.id}
             # Create controls CSV
             controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
             for control in controls:
-                evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
+                # Get evidence linked to this control
+                evidence = db.query(Evidence).filter(Evidence.control_id == control.id).all()
+                evidence_links = ", ".join([f"EV-{ev.id}" for ev in evidence])
                 controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},Not set,{evidence_links}\n"
             
             zip_file.writestr("controls.csv", controls_csv)

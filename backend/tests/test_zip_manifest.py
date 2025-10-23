@@ -13,6 +13,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base
 from app.models import Organization, AISystem, Control, Evidence
+from tests.conftest import create_test_system
 from app.api.routes.reports import _generate_annex_iv_zip
 
 
@@ -158,7 +159,7 @@ async def test_zip_manifest_generation(db_session, test_system_for_zip):
         
         # Test 10: Timestamp is ISO format
         from datetime import datetime
-from tests.conftest import create_test_system
+        
         datetime.fromisoformat(manifest["generated_at"])  # Will raise if invalid
         print(f"✅ TEST 10 PASSED: Timestamp is valid ISO format")
     

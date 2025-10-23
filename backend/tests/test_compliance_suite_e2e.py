@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 from app.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import FRIA, Control, Evidence, Incident, Organization
+from tests.conftest import create_test_system
 
 
 @pytest.fixture
@@ -132,8 +133,6 @@ def seeded_org_and_system(client):
     
     # Create incidents directly in database
     from datetime import datetime, timezone
-from tests.conftest import create_test_system
-
     
     db = SessionLocal()
     try:
