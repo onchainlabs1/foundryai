@@ -34,10 +34,6 @@ export function ModelVersionPanel({ systemId }: ModelVersionPanelProps) {
   const [notes, setNotes] = useState('')
   const [artifactHash, setArtifactHash] = useState('')
 
-  useEffect(() => {
-    loadVersions()
-  }, [loadVersions])
-
   const loadVersions = useCallback(async () => {
     try {
       const [versionsList, latest] = await Promise.all([
@@ -52,6 +48,10 @@ export function ModelVersionPanel({ systemId }: ModelVersionPanelProps) {
       setLoading(false)
     }
   }, [systemId])
+
+  useEffect(() => {
+    loadVersions()
+  }, [loadVersions])
 
   const handleCreate = async () => {
     if (!version || !approverEmail) {

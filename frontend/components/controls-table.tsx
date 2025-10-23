@@ -42,11 +42,6 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState<number | null>(null)
   const [selectedEvidence, setSelectedEvidence] = useState<number[]>([])
 
-  useEffect(() => {
-    loadControls()
-    loadEvidence()
-  }, [systemId, loadControls, loadEvidence])
-
   const loadControls = useCallback(async () => {
     setLoading(true)
     try {
@@ -67,6 +62,11 @@ export function ControlsTable({ systemId }: ControlsTableProps) {
       console.error('Failed to load evidence:', error)
     }
   }, [systemId])
+
+  useEffect(() => {
+    loadControls()
+    loadEvidence()
+  }, [loadControls, loadEvidence])
 
   const handleSaveAll = async () => {
     setSaving(true)

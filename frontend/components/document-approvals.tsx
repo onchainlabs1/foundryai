@@ -35,10 +35,6 @@ export function DocumentApprovals({ systemId, docType, docTitle }: DocumentAppro
   const [approverEmail, setApproverEmail] = useState('')
   const [notes, setNotes] = useState('')
 
-  useEffect(() => {
-    loadApproval()
-  }, [loadApproval])
-
   const loadApproval = useCallback(async () => {
     try {
       const data = await api.getDocumentApproval(systemId, docType)
@@ -49,6 +45,10 @@ export function DocumentApprovals({ systemId, docType, docTitle }: DocumentAppro
       setLoading(false)
     }
   }, [systemId, docType])
+
+  useEffect(() => {
+    loadApproval()
+  }, [loadApproval])
 
   const handleSubmitForReview = async () => {
     if (!submitterEmail) {
