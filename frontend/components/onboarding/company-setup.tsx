@@ -71,11 +71,11 @@ const countries = [
 ]
 
 const dpiaOptions = [
-  { value: 'em_andamento', label: '🔄 DPIA em andamento' },
-  { value: 'nao_aplicavel', label: '❌ N/A - Não processa dados pessoais' },
-  { value: 'planejado', label: '📅 Será conduzido antes do deploy' },
-  { value: 'concluido', label: '✅ DPIA já concluído' },
-  { value: 'nao_necessario', label: 'ℹ️ Não necessário para este sistema' }
+  { value: 'em_andamento', label: '🔄 DPIA in progress' },
+  { value: 'nao_aplicavel', label: '❌ N/A - Does not process personal data' },
+  { value: 'planejado', label: '📅 Will be conducted before deploy' },
+  { value: 'concluido', label: '✅ DPIA already concluded' },
+  { value: 'nao_necessario', label: 'ℹ️ Not necessary for this system' }
 ]
 
 export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
@@ -491,16 +491,16 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
               {watch('dpiaStatus') === 'concluido' && (
                 <div className="space-y-3">
                   <Label htmlFor="dpiaLink" className="text-sm font-semibold text-amber-800">
-                    DPIA Link (opcional)
+                    DPIA Link (optional)
                   </Label>
                   <Input
                     id="dpiaLink"
                     {...register('dpiaLink')}
-                    placeholder="https://example.com/dpia ou referência interna"
+                    placeholder="https://example.com/dpia or internal reference"
                     className="bg-background/50 border-amber-200 focus:border-amber-400"
                   />
                   <p className="text-xs text-amber-600">
-                    Link ou referência para o DPIA concluído (opcional)
+                    Link or reference to the completed DPIA (optional)
                   </p>
                 </div>
               )}

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Script para limpar todos os dados cadastrados mantendo a estrutura do banco.
+Script to clean all registered data while maintaining database structure.
 
-ATENÇÃO: Este script deleta TODOS os dados mas mantém:
-- Estrutura das tabelas (schema)
-- Migrations aplicadas
-- Configuração do sistema
+WARNING: This script deletes ALL data but maintains:
+- Table structure (schema)
+- Applied migrations
+- System configuration
 
-Uso:
+Usage:
     python reset_data.py
 
-ou com confirmação automática:
+or with automatic confirmation:
     python reset_data.py --yes
 """
 
@@ -30,75 +30,75 @@ from app.models import (
 
 
 def confirm_reset():
-    """Pedir confirmação do usuário."""
+    """Ask for user confirmation."""
     if '--yes' in sys.argv or '-y' in sys.argv:
         return True
     
     print("\n" + "="*60)
-    print("⚠️  ATENÇÃO: RESET COMPLETO DE DADOS")
+    print("⚠️  WARNING: COMPLETE DATA RESET")
     print("="*60)
-    print("\nEste script irá DELETAR todos os dados:")
-    print("  - Todas as organizações")
-    print("  - Todos os sistemas AI")
-    print("  - Todos os riscos")
-    print("  - Todos os controles")
-    print("  - Todas as evidências")
-    print("  - Todos os FRIAs")
-    print("  - Todos os incidentes")
-    print("  - Todas as aprovações de documentos")
-    print("  - Todas as versões de modelo")
-    print("  - Todos os dados de onboarding")
-    print("\n❗ A estrutura do banco (tabelas) será MANTIDA")
-    print("❗ As migrations NÃO serão revertidas")
+    print("\nThis script will DELETE all data:")
+    print("  - All organizations")
+    print("  - All AI systems")
+    print("  - All risks")
+    print("  - All controls")
+    print("  - All evidence")
+    print("  - All FRIAs")
+    print("  - All incidents")
+    print("  - All document approvals")
+    print("  - All model versions")
+    print("  - All onboarding data")
+    print("\n❗ Database structure (tables) will be MAINTAINED")
+    print("❗ Migrations will NOT be reverted")
     print("\n" + "="*60)
     
-    response = input("\nDeseja continuar? Digite 'SIM' para confirmar: ")
-    return response.upper() == 'SIM'
+    response = input("\nDo you want to continue? Type 'YES' to confirm: ")
+    return response.upper() == 'YES'
 
 
 def delete_generated_documents():
-    """Deletar documentos gerados."""
+    """Delete generated documents."""
     docs_dir = Path("generated_documents")
     
     if docs_dir.exists():
-        print("\n📁 Deletando documentos gerados...")
+        print("\n📁 Deleting generated documents...")
         import shutil
         shutil.rmtree(docs_dir)
-        print("   ✅ Documentos deletados")
+        print("   ✅ Documents deleted")
     else:
-        print("\n📁 Nenhum documento gerado encontrado")
+        print("\n📁 No generated documents found")
 
 
 def reset_database():
-    """Limpar todos os dados do banco."""
+    """Clear all database data."""
     db = SessionLocal()
     
     try:
-        print("\n🗄️  Iniciando limpeza do banco de dados...\n")
+        print("\n🗄️  Starting database cleanup...\n")
         
-        # Ordem importante: deletar tabelas dependentes primeiro
+        # Important order: delete dependent tables first
         tables_to_clear = [
-            # Documentos e aprovações
-            ("DocumentApproval", DocumentApproval, "aprovações de documentos"),
+            # Documents and approvals
+            ("DocumentApproval", DocumentApproval, "document approvals"),
             
             # Model versions
-            ("ModelVersion", ModelVersion, "versões de modelo"),
+            ("ModelVersion", ModelVersion, "model versions"),
             
-            # Dados de compliance
-            ("Evidence", Evidence, "evidências"),
-            ("Control", Control, "controles"),
-            ("AIRisk", AIRisk, "riscos"),
+            # Compliance data
+            ("Evidence", Evidence, "evidence"),
+            ("Control", Control, "controls"),
+            ("AIRisk", AIRisk, "risks"),
             ("FRIA", FRIA, "FRIAs"),
-            ("Incident", Incident, "incidentes"),
-            ("Oversight", Oversight, "configurações de oversight"),
-            ("PMM", PMM, "configurações de PMM"),
-            ("OnboardingData", OnboardingData, "dados de onboarding"),
+            ("Incident", Incident, "incidents"),
+            ("Oversight", Oversight, "oversight configurations"),
+            ("PMM", PMM, "PMM configurations"),
+            ("OnboardingData", OnboardingData, "onboarding data"),
             
-            # Sistemas (depois de todas as dependências)
-            ("AISystem", AISystem, "sistemas AI"),
+            # Systems (after all dependencies)
+            ("AISystem", AISystem, "AI systems"),
             
-            # Organizações (por último)
-            ("Organization", Organization, "organizações"),
+            # Organizations (last)
+            ("Organization", Organization, "organizations"),
         ]
         
         total_deleted = 0
@@ -109,29 +109,29 @@ def reset_database():
                 if count > 0:
                     db.query(model).delete()
                     db.commit()
-                    print(f"   ✅ {count:3d} {description} deletado(s)")
+                    print(f"   ✅ {count:3d} {description} deleted")
                     total_deleted += count
                 else:
-                    print(f"   ⊘  0   {description} (já vazio)")
+                    print(f"   ⊘  0   {description} (already empty)")
             except Exception as e:
-                print(f"   ⚠️  Erro ao deletar {description}: {e}")
+                print(f"   ⚠️  Error deleting {description}: {e}")
                 db.rollback()
         
         # Reset auto-increment counters (SQLite specific)
-        print("\n🔄 Resetando contadores de ID...")
+        print("\n🔄 Resetting ID counters...")
         try:
             db.execute(text("DELETE FROM sqlite_sequence"))
             db.commit()
-            print("   ✅ Contadores resetados")
+            print("   ✅ Counters reset")
         except Exception as e:
-            print(f"   ⚠️  Aviso: {e}")
+            print(f"   ⚠️  Warning: {e}")
         
         print("\n" + "="*60)
-        print(f"✅ TOTAL: {total_deleted} registros deletados com sucesso!")
+        print(f"✅ TOTAL: {total_deleted} records deleted successfully!")
         print("="*60)
         
     except Exception as e:
-        print(f"\n❌ ERRO durante limpeza: {e}")
+        print(f"\n❌ ERROR during cleanup: {e}")
         db.rollback()
         return False
     finally:
@@ -141,22 +141,22 @@ def reset_database():
 
 
 def verify_clean():
-    """Verificar se o banco está limpo."""
+    """Verify if database is clean."""
     db = SessionLocal()
     
     try:
-        print("\n🔍 Verificando limpeza...\n")
+        print("\n🔍 Verifying cleanup...\n")
         
         checks = [
-            ("Organizações", Organization),
-            ("Sistemas AI", AISystem),
-            ("Riscos", AIRisk),
-            ("Controles", Control),
-            ("Evidências", Evidence),
+            ("Organizations", Organization),
+            ("AI Systems", AISystem),
+            ("Risks", AIRisk),
+            ("Controls", Control),
+            ("Evidence", Evidence),
             ("FRIAs", FRIA),
-            ("Incidentes", Incident),
-            ("Aprovações", DocumentApproval),
-            ("Versões Modelo", ModelVersion),
+            ("Incidents", Incident),
+            ("Approvals", DocumentApproval),
+            ("Model Versions", ModelVersion),
         ]
         
         all_clean = True
@@ -164,9 +164,9 @@ def verify_clean():
         for name, model in checks:
             count = db.query(model).count()
             if count == 0:
-                print(f"   ✅ {name:20s}: 0 registros")
+                print(f"   ✅ {name:20s}: 0 records")
             else:
-                print(f"   ❌ {name:20s}: {count} registros (AINDA EXISTEM!)")
+                print(f"   ❌ {name:20s}: {count} records (STILL EXIST!)")
                 all_clean = False
         
         print()
@@ -177,47 +177,47 @@ def verify_clean():
 
 
 def main():
-    """Função principal."""
+    """Main function."""
     print("\n" + "🧹 " * 20)
-    print("   AIMS STUDIO - RESET DE DADOS")
+    print("   AIMS STUDIO - DATA RESET")
     print("🧹 " * 20)
     
-    # Pedir confirmação
+    # Ask for confirmation
     if not confirm_reset():
-        print("\n❌ Operação cancelada pelo usuário.")
+        print("\n❌ Operation cancelled by user.")
         return 1
     
-    print("\n🚀 Iniciando reset...\n")
+    print("\n🚀 Starting reset...\n")
     
-    # 1. Deletar documentos gerados
+    # 1. Delete generated documents
     delete_generated_documents()
     
-    # 2. Limpar banco de dados
+    # 2. Clear database
     success = reset_database()
     
     if not success:
-        print("\n❌ Reset falhou. Verifique os erros acima.")
+        print("\n❌ Reset failed. Check errors above.")
         return 1
     
-    # 3. Verificar limpeza
+    # 3. Verify cleanup
     if verify_clean():
         print("\n" + "="*60)
-        print("🎉 RESET COMPLETO COM SUCESSO!")
+        print("🎉 COMPLETE RESET SUCCESSFUL!")
         print("="*60)
-        print("\n✅ Banco de dados limpo")
-        print("✅ Documentos removidos")
-        print("✅ Estrutura mantida")
-        print("✅ Pronto para novo teste\n")
+        print("\n✅ Database cleaned")
+        print("✅ Documents removed")
+        print("✅ Structure maintained")
+        print("✅ Ready for new test\n")
         
-        print("💡 Próximos passos:")
-        print("   1. Acesse: http://localhost:3000")
-        print("   2. Limpe localStorage do navegador (F12 → Console):")
+        print("💡 Next steps:")
+        print("   1. Access: http://localhost:3000")
+        print("   2. Clear browser localStorage (F12 → Console):")
         print("      localStorage.clear(); location.reload()")
-        print("   3. Comece novo onboarding\n")
+        print("   3. Start new onboarding\n")
         
         return 0
     else:
-        print("\n⚠️  Algumas tabelas ainda têm dados. Verifique acima.")
+        print("\n⚠️  Some tables still have data. Check above.")
         return 1
 
 
