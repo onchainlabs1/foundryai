@@ -5,9 +5,10 @@ EU AI Act + ISO/IEC 42001 compliance setup.
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.security import verify_api_key
 from app.database import get_db
 from app.models import AIRisk, AISystem, Control, Organization, Oversight, PMM
 from app.schemas_audit import (
