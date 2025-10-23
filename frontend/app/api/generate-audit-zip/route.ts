@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     
     // Execute the Python script
     const { stdout, stderr } = await execAsync(
-      `cd /Users/fabio/Desktop/foundry/backend && python ../generate_audit_ready_zip.py`,
+      `cd /Users/fabio/Desktop/foundry/backend && python3 ../generate_audit_ready_zip.py`,
       { 
         env: { 
           ...process.env,

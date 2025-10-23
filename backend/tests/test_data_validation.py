@@ -28,13 +28,27 @@ class TestDataValidation:
             name="Test System 1",
             org_id=test_org_with_key["org_id"],
             ai_act_class="high",
-            is_general_purpose_ai=True
+            is_general_purpose_ai=True,
+            impacts_fundamental_rights=True,
+            personal_data_processed=True,
+            uses_biometrics=False,
+            processes_sensitive_data=True,
+            uses_gpai=True,
+            biometrics_in_public=False,
+            requires_fria=True
         )
         system2 = AISystem(
             name="Test System 2", 
             org_id=test_org_with_key["org_id"],
             ai_act_class="limited",
-            is_general_purpose_ai=False
+            is_general_purpose_ai=False,
+            impacts_fundamental_rights=False,
+            personal_data_processed=False,
+            uses_biometrics=False,
+            processes_sensitive_data=False,
+            uses_gpai=False,
+            biometrics_in_public=False,
+            requires_fria=False
         )
         db_session.add_all([system1, system2])
         db_session.commit()
