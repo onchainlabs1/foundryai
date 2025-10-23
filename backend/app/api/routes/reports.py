@@ -506,7 +506,7 @@ Created: {system.id}
             controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
             for control in controls:
                 evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
-                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},{control.implementation_status or 'Not set'},{evidence_links}\n"
+                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},Not set,{evidence_links}\n"
             
             zip_file.writestr("controls.csv", controls_csv)
             artifacts.append({
@@ -524,7 +524,7 @@ Due Date: {control.due_date}
 ISO Clause: {control.iso_clause}
 Priority: {control.priority}
 Owner Email: {control.owner_email or 'N/A'}
-Implementation Status: {control.implementation_status or 'Not set'}
+Implementation Status: Not set
 Evidence Links: {', '.join([f'EV-{ev.id}' for ev in control.evidence])}
 """
                 zip_file.writestr(f"controls/{control.id}.txt", control_info)
@@ -729,7 +729,7 @@ Created: {system.id}
             controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
             for control in controls:
                 evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
-                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},{control.implementation_status or 'Not set'},{evidence_links}\n"
+                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},Not set,{evidence_links}\n"
             
             zip_file.writestr("controls.csv", controls_csv)
             artifacts.append({
@@ -911,7 +911,7 @@ Created: {system.id}
             controls_csv = "Control ID,Name,Status,Due Date,ISO Clause,Priority,Owner Email,Implementation Status,Evidence Links\n"
             for control in controls:
                 evidence_links = ", ".join([f"EV-{ev.id}" for ev in control.evidence])
-                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},{control.implementation_status or 'Not set'},{evidence_links}\n"
+                controls_csv += f"{control.id},{control.name},{control.status},{control.due_date},{control.iso_clause},{control.priority},{control.owner_email or 'N/A'},Not set,{evidence_links}\n"
             
             zip_file.writestr("controls.csv", controls_csv)
             artifacts.append({

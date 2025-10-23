@@ -270,7 +270,7 @@ class TestComplianceSuite:
             )
             
             response = client.get(
-                "/reports/export/soa.md?system_id=1",
+                "/export/soa.md?system_id=1",
                 headers={"X-API-Key": "dev-aims-demo-key"}
             )
             

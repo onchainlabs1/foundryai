@@ -120,7 +120,20 @@ async def create_system(
 ):
     """Create a new AI system."""
     
-    db_system = AISystem(**system.model_dump(), org_id=org.id)
+    # Ensure all required fields have default values
+    system_data = system.model_dump()
+    system_data.update({
+        'impacts_fundamental_rights': system_data.get('impacts_fundamental_rights', False),
+        'personal_data_processed': system_data.get('personal_data_processed', False),
+        'uses_biometrics': system_data.get('uses_biometrics', False),
+        'is_general_purpose_ai': system_data.get('is_general_purpose_ai', False),
+        'processes_sensitive_data': system_data.get('processes_sensitive_data', False),
+        'uses_gpai': system_data.get('uses_gpai', False),
+        'biometrics_in_public': system_data.get('biometrics_in_public', False),
+        'requires_fria': system_data.get('requires_fria', False),
+    })
+    
+    db_system = AISystem(**system_data, org_id=org.id)
 
     # Auto-classify AI Act
     system_dict = system.model_dump()
