@@ -135,9 +135,10 @@ async def create_system(
     
     db_system = AISystem(**system_data, org_id=org.id)
 
-    # Auto-classify AI Act
-    system_dict = system.model_dump()
-    db_system.ai_act_class = classify_ai_act(system_dict)
+    # Auto-classify AI Act only if not provided by user
+    if not system_data.get('ai_act_class'):
+        system_dict = system.model_dump()
+        db_system.ai_act_class = classify_ai_act(system_dict)
     
     # Auto-compute requires_fria
     from app.services.fria_logic import compute_requires_fria

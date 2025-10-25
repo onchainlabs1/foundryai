@@ -24,6 +24,7 @@ class AISystemBase(BaseModel):
     third_party_providers: Optional[str] = None
     risk_category: Optional[str] = None
     # New audit-grade fields
+    ai_act_class: Optional[str] = None
     system_role: Optional[str] = None
     processes_sensitive_data: bool = False
     uses_gpai: bool = False

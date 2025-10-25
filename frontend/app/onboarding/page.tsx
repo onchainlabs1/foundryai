@@ -119,56 +119,17 @@ export default function OnboardingPage() {
 
   // Load saved data on mount
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        // Only load data if it's a valid ongoing session with meaningful data
-        if (parsed.step && 
-            parsed.step >= 1 && 
-            parsed.step <= steps.length && 
-            !parsed.completed &&
-            parsed.systems && 
-            parsed.systems.length > 0 && 
-            parsed.systems[0].name) {
-          setData(parsed)
-          setCurrentStep(parsed.step)
-          setCompleted(false)
-          console.log(`Loaded onboarding data: step ${parsed.step}`)
-        } else {
-          // Clear old completed or empty data
-          localStorage.removeItem(STORAGE_KEY)
-          localStorage.removeItem('system-id-mapping')
-          setCurrentStep(1)
-          setData({ step: 1 })
-          setCompleted(false)
-          console.log('Cleared old or empty onboarding data')
-        }
-      } catch (error) {
-        console.error('Failed to load saved onboarding data:', error)
-        // Clear corrupted data
-        localStorage.removeItem(STORAGE_KEY)
-        localStorage.removeItem('system-id-mapping')
-        setCurrentStep(1)
-        setData({ step: 1 })
-        setCompleted(false)
-      }
-    }
+    // Always start onboarding from step 1
+    // Clear any existing onboarding data to ensure fresh start
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem('system-id-mapping')
+    setCurrentStep(1)
+    setData({ step: 1 })
+    setCompleted(false)
+    console.log('Onboarding always starts from step 1')
     
-    // Load system ID mapping
-    const savedMapping = localStorage.getItem('system-id-mapping')
-    if (savedMapping) {
-      try {
-        const mappingData = JSON.parse(savedMapping)
-        const mapping = new Map<string, number>()
-        Object.entries(mappingData).forEach(([key, value]) => {
-          mapping.set(key, value as number)
-        })
-        setSystemIdMapping(mapping)
-      } catch (error) {
-        console.error('Failed to load system ID mapping:', error)
-      }
-    }
+    // Reset system ID mapping to ensure fresh start
+    setSystemIdMapping(new Map())
   }, [])
 
   // Save data whenever it changes

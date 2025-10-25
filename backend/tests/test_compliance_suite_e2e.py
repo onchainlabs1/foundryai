@@ -6,6 +6,7 @@ import json
 import logging
 
 import pytest
+import pytest
 from fastapi.testclient import TestClient
 
 logger = logging.getLogger(__name__)
@@ -17,50 +18,28 @@ from tests.conftest import create_test_system
 
 
 @pytest.fixture
-def client():
-    """Test client with clean database."""
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    with TestClient(app) as test_client:
-        yield test_client
-
-
-@pytest.fixture
-def seeded_org_and_system(client):
+def seeded_org_and_system(test_client_with_seed):
     """Create organization and AI system with comprehensive test data."""
-    # Create organization directly in database
-    
-    db = SessionLocal()
-    try:
-        org = Organization(name="Test Compliance Org", api_key="test-compliance-key")
-        db.add(org)
-        db.commit()
-        db.refresh(org)
-        org_id = org.id
-    finally:
-        db.close()
+    client, db_session, org_data = test_client_with_seed
+    org_id = org_data["org_id"]
     
     # Create AI system directly in database with all required fields
     from tests.conftest import create_test_system
     
-    db = SessionLocal()
-    try:
-        system = create_test_system(
-            org_id=org_id,
-            name="Test AI System",
-            purpose="Testing compliance suite functionality",
-            domain="testing",
-            deployment_context="public",
-            ai_act_class="high-risk",
-            uses_gpai=True,
-            system_role="provider"
-        )
-        db.add(system)
-        db.commit()
-        db.refresh(system)
-        system_id = system.id
-    finally:
-        db.close()
+    system = create_test_system(
+        org_id=org_id,
+        name="Test AI System",
+        purpose="Testing compliance suite functionality",
+        domain="testing",
+        deployment_context="public",
+        ai_act_class="high-risk",
+        uses_gpai=True,
+        system_role="provider"
+    )
+    db_session.add(system)
+    db_session.commit()
+    db_session.refresh(system)
+    system_id = system.id
     
     # Create evidence directly in database
     evidence_ids = []
@@ -73,102 +52,85 @@ def seeded_org_and_system(client):
     ]):
         import hashlib
         
-        db = SessionLocal()
-        try:
-            checksum = hashlib.sha256(f"evidence_{i}".encode()).hexdigest()
-            evidence = Evidence(
-                org_id=org_id,
-                system_id=system_id,
-                label=label,
-                file_path=f"/tmp/test_{i}.pdf",
-                checksum=checksum,
-                iso42001_clause=clause,
-                control_name=control
-            )
-            db.add(evidence)
-            db.commit()
-            db.refresh(evidence)
-            evidence_ids.append(evidence.id)
-        finally:
-            db.close()
-    
-    # Create FRIA directly in database
-
-    
-    db = SessionLocal()
-    try:
-        fria = FRIA(
+        checksum = hashlib.sha256(f"evidence_{i}".encode()).hexdigest()
+        evidence = Evidence(
             org_id=org_id,
             system_id=system_id,
-            applicable=True,
-            status="draft",
-            answers_json=json.dumps({
-                "q1": True, "q2": False, "q3": True, "q4": False, "q5": True,
-                "q6": False, "q7": True, "q8": False, "q9": True, "q10": False
-            }),
-            summary_md="Test FRIA summary"
+            label=label,
+            file_path=f"/tmp/test_{i}.pdf",
+            checksum=checksum,
+            iso42001_clause=clause,
+            control_name=control
         )
-        db.add(fria)
-        db.commit()
-    finally:
-        db.close()
+        db_session.add(evidence)
+        db_session.commit()
+        db_session.refresh(evidence)
+        evidence_ids.append(evidence.id)
+    
+    # Create FRIA directly in database
+    fria = FRIA(
+        org_id=org_id,
+        system_id=system_id,
+        applicable=True,
+        status="draft",
+        answers_json=json.dumps({
+            "q1": True, "q2": False, "q3": True, "q4": False, "q5": True,
+            "q6": False, "q7": True, "q8": False, "q9": True, "q10": False
+        }),
+        summary_md="Test FRIA summary"
+    )
+    db_session.add(fria)
+    db_session.commit()
     
     # Create controls directly in database
-    
-    db = SessionLocal()
-    try:
-        for iso_clause, name, status in [
-            ("ISO42001:6.1.1", "Risk Management", "implemented"),
-            ("ISO42001:6.2.1", "Data Quality", "partial"),
-            ("AIAct:Art12", "Transparency", "missing"),
-        ]:
-            control = Control(
-                org_id=org_id,
-                system_id=system_id,
-                iso_clause=iso_clause,
-                name=name,
-                status=status,
-                priority="medium"
-            )
-            db.add(control)
-        db.commit()
-    finally:
-        db.close()
+    for iso_clause, name, status in [
+        ("ISO42001:6.1.1", "Risk Management", "implemented"),
+        ("ISO42001:6.2.1", "Data Quality", "partial"),
+        ("AIAct:Art12", "Transparency", "missing"),
+    ]:
+        control = Control(
+            org_id=org_id,
+            system_id=system_id,
+            iso_clause=iso_clause,
+            name=name,
+            status=status,
+            priority="medium"
+        )
+        db_session.add(control)
+    db_session.commit()
     
     # Create incidents directly in database
     from datetime import datetime, timezone
     
-    db = SessionLocal()
-    try:
-        for severity, description in [
-            ("medium", "Test incident for PMM report"),
-            ("low", "Minor issue resolved"),
-        ]:
-            incident = Incident(
-                org_id=org_id,
-                system_id=system_id,
-                severity=severity,
-                description=description,
-                detected_at=datetime.now(timezone.utc)
-            )
-            db.add(incident)
-        db.commit()
-    finally:
-        db.close()
+    for severity, description in [
+        ("medium", "Test incident for PMM report"),
+        ("low", "Minor issue resolved"),
+    ]:
+        incident = Incident(
+            org_id=org_id,
+            system_id=system_id,
+            severity=severity,
+            description=description,
+            detected_at=datetime.now(timezone.utc)
+        )
+        db_session.add(incident)
+    db_session.commit()
     
     return {
+        "client": client,
         "org_id": org_id,
         "system_id": system_id,
         "evidence_ids": evidence_ids,
-        "api_key": "test-compliance-key"
+        "api_key": "dev-aims-demo-key"
     }
 
 
 class TestComplianceSuiteE2E:
     """End-to-end tests for compliance suite functionality."""
     
-    def test_generate_all_document_drafts(self, client, seeded_org_and_system):
+    def test_generate_all_document_drafts(self, seeded_org_and_system):
         """Test generating drafts for all five document types."""
+        client = seeded_org_and_system["client"]
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
         
@@ -219,7 +181,8 @@ class TestComplianceSuiteE2E:
                         assert "page" in citation
                         assert "checksum" in citation
     
-    def test_export_annex_iv_formats(self, client, seeded_org_and_system):
+    def test_export_annex_iv_formats(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test exporting Annex IV in MD, DOCX, and PDF formats."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
@@ -233,11 +196,15 @@ class TestComplianceSuiteE2E:
                 headers={"X-API-Key": api_key}
             )
             
-            # PDF export may be disabled (424), others should work (200)
+            # PDF export may be disabled (424) or WeasyPrint unavailable (501), others should work (200)
             if format_type == "pdf":
-                assert response.status_code in [200, 424]
+                assert response.status_code in [200, 424, 501], f"PDF export failed with status {response.status_code}: {response.text}"
+                if response.status_code in [424, 501]:
+                    # Verify appropriate error message for PDF export issues
+                    detail = response.json()["detail"]
+                    assert any(msg in detail.lower() for msg in ["pdf", "weasyprint", "disabled", "unavailable"])
             else:
-                assert response.status_code == 200
+                assert response.status_code == 200, f"{format_type} export failed with status {response.status_code}: {response.text}"
             
             # Verify content type (only for successful responses)
             if response.status_code == 200:
@@ -257,7 +224,8 @@ class TestComplianceSuiteE2E:
                 assert "Annex IV" in content or "Technical Documentation" in content
                 assert "[" in content and "]" in content  # Should have citations
     
-    def test_export_fria_formats(self, client, seeded_org_and_system):
+    def test_export_fria_formats(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test exporting FRIA in MD, DOCX, and PDF formats."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
@@ -287,7 +255,8 @@ class TestComplianceSuiteE2E:
                 content = response.text
                 assert "FRIA" in content or "Fundamental Rights" in content
     
-    def test_citation_deeplink_structure(self, client, seeded_org_and_system):
+    def test_citation_deeplink_structure(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test citation deep link URL structure."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
@@ -311,7 +280,8 @@ class TestComplianceSuiteE2E:
         # URL can be relative path or full URL
         assert url.startswith("/") or url.startswith("http")
     
-    def test_coverage_calculation_accuracy(self, client, seeded_org_and_system):
+    def test_coverage_calculation_accuracy(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test that coverage calculations are accurate based on available evidence."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
@@ -339,7 +309,8 @@ class TestComplianceSuiteE2E:
             assert 0 <= section["coverage"] <= 1
             assert len(section["paragraphs"]) > 0
     
-    def test_authentication_required(self, client, seeded_org_and_system):
+    def test_authentication_required(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test that all compliance suite endpoints require authentication."""
         system_id = seeded_org_and_system["system_id"]
         
@@ -359,7 +330,8 @@ class TestComplianceSuiteE2E:
         response = client.get(f"/evidence/view?evidence_id={evidence_id}&page=1")
         assert response.status_code == 401
     
-    def test_invalid_document_types(self, client, seeded_org_and_system):
+    def test_invalid_document_types(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test handling of invalid document types."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
@@ -382,7 +354,8 @@ class TestComplianceSuiteE2E:
         # May return 400 (bad request) or 404 (not found) depending on implementation
         assert response.status_code in [400, 404]
     
-    def test_invalid_export_formats(self, client, seeded_org_and_system):
+    def test_invalid_export_formats(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test handling of invalid export formats."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
@@ -396,7 +369,8 @@ class TestComplianceSuiteE2E:
         # May return 400 (bad request) or 404 (not found) depending on implementation
         assert response.status_code in [400, 404]
     
-    def test_system_not_found(self, client, seeded_org_and_system):
+    def test_system_not_found(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test handling of non-existent system IDs."""
         api_key = seeded_org_and_system["api_key"]
         invalid_system_id = 99999
@@ -417,7 +391,8 @@ class TestComplianceSuiteE2E:
         )
         assert response.status_code == 404
     
-    def test_feature_flag_enforcement(self, client, seeded_org_and_system):
+    def test_feature_flag_enforcement(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test that LLM refinement is only available when feature flag is enabled."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]
@@ -439,7 +414,8 @@ class TestComplianceSuiteE2E:
         # Should return 404 (not found) or 403 (forbidden) when feature is disabled
         assert response.status_code in [404, 403]
     
-    def test_evidence_viewer_with_invalid_evidence(self, client, seeded_org_and_system):
+    def test_evidence_viewer_with_invalid_evidence(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test evidence viewer with invalid evidence ID."""
         api_key = seeded_org_and_system["api_key"]
         invalid_evidence_id = 99999
@@ -451,7 +427,8 @@ class TestComplianceSuiteE2E:
         )
         assert response.status_code == 404
     
-    def test_comprehensive_workflow(self, client, seeded_org_and_system):
+    def test_comprehensive_workflow(self, seeded_org_and_system):
+        client = seeded_org_and_system["client"]
         """Test a complete workflow: generate draft, check coverage, export document."""
         system_id = seeded_org_and_system["system_id"]
         api_key = seeded_org_and_system["api_key"]

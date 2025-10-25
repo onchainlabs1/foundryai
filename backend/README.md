@@ -13,7 +13,7 @@ FastAPI backend for ISO/IEC 42001 + EU AI Act compliance platform.
 - Controls management with RACI
 - Statement of Applicability (SoA) generation
 - Post-Market Monitoring (incident tracking)
-- Professional exports (Annex IV ZIP, Executive PPTX)
+- Professional exports (Annex IV ZIP, Executive PPTX, PDF)
 - Transparent scoring algorithm
 - Reports summary API
 
@@ -38,6 +38,26 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your settings
 ```
+
+### PDF Export (Optional)
+
+PDF export requires WeasyPrint, which is an optional dependency:
+
+```bash
+# Install WeasyPrint for PDF export support
+pip install weasyprint
+
+# Or install with system dependencies (recommended for production)
+# Ubuntu/Debian:
+sudo apt-get install libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
+pip install weasyprint
+
+# macOS:
+brew install pango
+pip install weasyprint
+```
+
+**Note**: If WeasyPrint is not installed, PDF export endpoints will return HTTP 501 with a clear error message. All other export formats (ZIP, DOCX, MD) will continue to work normally.
 
 ### Development
 
@@ -108,9 +128,12 @@ pre-commit run --all-files
 #### Reports & Exports
 - `GET /reports/summary` - Get summary report
 - `GET /reports/score` - Get compliance scores
-- `GET /reports/annex-iv.zip` - Export Annex IV package
+- `GET /reports/annex-iv/{system_id}` - Export Annex IV package (ZIP)
 - `GET /reports/deck.pptx` - Export Executive deck
 - `GET /reports/export/pptx` - Alias for deck.pptx
+
+### Deprecated Endpoints
+- `GET /reports/export/annex-iv.zip` - Use `/reports/annex-iv/{system_id}` instead
 
 ## Environment Variables
 
@@ -184,6 +207,13 @@ curl -X POST "http://localhost:8000/incidents" \
 ```bash
 curl -X GET "http://localhost:8000/reports/score" \
   -H "X-API-Key: dev-aims-demo-key"
+```
+
+### Export Annex IV ZIP
+```bash
+curl -X GET "http://localhost:8000/reports/annex-iv/1" \
+  -H "X-API-Key: dev-aims-demo-key" \
+  -o annex-iv-export.zip
 ```
 
 ## Scoring Algorithm

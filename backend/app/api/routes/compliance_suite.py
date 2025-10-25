@@ -2,6 +2,7 @@
 Compliance Suite API Routes - Template-based document generation endpoints.
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -22,6 +23,7 @@ from app.schemas import (
 from app.services.compliance_suite import compliance_suite_service
 from app.services.s3 import s3_service
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reports", tags=["compliance-suite"])
 
 
@@ -119,9 +121,22 @@ def export_compliance_document(
             }
         )
         
-    except ValueError as e:
+    except (ValueError, ImportError, LookupError) as e:
+        # Check if it's a WeasyPrint availability issue
+        if any(msg in str(e).lower() for msg in [
+            "weasyprint not available", 
+            "not available for pdf export",
+            "no module named 'weasyprint'",
+            "weasyprint import error"
+        ]):
+            logger.info(f"PDF export requested but WeasyPrint not available: {str(e)}")
+            raise HTTPException(
+                status_code=501,
+                detail="PDF export requires WeasyPrint; install optional dependency or disable PDF export"
+            )
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        logger.error(f"Unexpected error in document export: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to export document: {str(e)}"

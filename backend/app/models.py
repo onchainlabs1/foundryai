@@ -4,6 +4,7 @@ from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Index, Integ
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.types import UTCDateTime
 
 
 class Organization(Base):
@@ -12,7 +13,7 @@ class Organization(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     api_key = Column(String(255), unique=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
     
     # New audit-grade fields
     primary_contact_name = Column(String(255))
@@ -101,7 +102,7 @@ class Evidence(Base):
     version = Column(String(50))
     checksum = Column(String(64))
     uploaded_by = Column(String(255))
-    upload_date = Column(DateTime, default=datetime.utcnow)
+    upload_date = Column(UTCDateTime, default=datetime.utcnow)
     status = Column(String(50), default="uploaded")
     reviewer_email = Column(String(255))
     link_or_location = Column(String(500))
@@ -124,8 +125,8 @@ class FRIA(Base):
     status = Column(String(50), default="draft")
     answers_json = Column(Text)
     summary_md = Column(Text)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
     
     # Extended FRIA fields for audit-grade compliance
     ctx_json = Column(Text)  # System context snapshot
@@ -150,7 +151,7 @@ class Control(Base):
     owner_email = Column(String(255))
     due_date = Column(Date, nullable=True)
     rationale = Column(Text)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class SoAItem(Base):
@@ -162,7 +163,7 @@ class SoAItem(Base):
     iso_clause = Column(String(100), index=True)
     applicable = Column(Boolean, default=True)
     justification = Column(Text)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class Incident(Base):
@@ -173,11 +174,11 @@ class Incident(Base):
     system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
     severity = Column(String(20), default="low")  # low|medium|high
     description = Column(Text)
-    detected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    resolved_at = Column(DateTime, nullable=True)
+    detected_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    resolved_at = Column(UTCDateTime, nullable=True)
     corrective_action = Column(Text)
     notify_list = Column(Text)  # Comma-separated emails or JSON
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ArtifactText(Base):
@@ -195,7 +196,7 @@ class ArtifactText(Base):
     ai_act_ref = Column(String(100), nullable=True)  # e.g., "Art12", "AnnexIV.8.3"
     lang = Column(String(10), nullable=True, default="en")
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     organization = relationship("Organization")
@@ -224,9 +225,9 @@ class Action(Base):
     priority = Column(String(20), default="medium")  # low|medium|high|critical
     assigned_to = Column(String(255))
     due_date = Column(Date, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at = Column(UTCDateTime, nullable=True)
 
     # Relationships
     organization = relationship("Organization")
@@ -249,8 +250,8 @@ class OnboardingData(Base):
     org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
     system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
     data_json = Column(Text, nullable=False)  # JSON string with onboarding data
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     organization = relationship("Organization")
     system = relationship("AISystem")
@@ -271,8 +272,8 @@ class AIRisk(Base):
     owner_email = Column(String(255))
     priority = Column(String(20), default="medium")  # low|med|high
     due_date = Column(Date, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     organization = relationship("Organization")
     ai_system = relationship("AISystem")
@@ -296,8 +297,8 @@ class Oversight(Base):
     training_plan = Column(Text)
     comm_plan = Column(Text)
     external_disclosure = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     organization = relationship("Organization")
     ai_system = relationship("AISystem")
@@ -320,8 +321,8 @@ class PMM(Base):
     improvement_plan = Column(Text)
     eu_db_required = Column(Boolean, default=False)
     eu_db_status = Column(String(100))
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     organization = relationship("Organization")
     ai_system = relationship("AISystem")
@@ -335,11 +336,11 @@ class ModelVersion(Base):
     org_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=False)
     system_id = Column(Integer, ForeignKey("ai_systems.id"), index=True, nullable=False)
     version = Column(String(50), nullable=False)  # e.g., "1.0.0", "2.1.3"
-    released_at = Column(DateTime, nullable=False)
+    released_at = Column(UTCDateTime, nullable=False)
     approver_email = Column(String(255))
     notes = Column(Text)
     artifact_hash = Column(String(64))  # SHA-256 of model artifact
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     organization = relationship("Organization")
     ai_system = relationship("AISystem")
@@ -355,14 +356,14 @@ class DocumentApproval(Base):
     doc_type = Column(String(100), nullable=False)  # annex_iv|fria|soa|pmm|instructions_for_use
     status = Column(String(50), default="draft")  # draft|submitted|approved|rejected
     submitted_by = Column(String(255))
-    submitted_at = Column(DateTime, nullable=True)
+    submitted_at = Column(UTCDateTime, nullable=True)
     approver_email = Column(String(255))
-    approved_at = Column(DateTime, nullable=True)
+    approved_at = Column(UTCDateTime, nullable=True)
     rejection_reason = Column(Text)
     notes = Column(Text)
     document_hash = Column(String(64))  # SHA-256 of approved document version
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     organization = relationship("Organization")
     ai_system = relationship("AISystem")

@@ -1,0 +1,40 @@
+{
+  "system": {
+    "name": "Credit Scoring AI",
+    "purpose": "Automated creditworthiness assessment",
+    "domain": "finance",
+    "ai_act_class": "high",
+    "role": "provider",
+    "requires_fria": true
+  },
+  "fria": {
+    "applicable": true,
+    "answers": {
+      "biometric_data": "No",
+      "fundamental_rights": "Yes",
+      "critical_infrastructure": "No",
+      "vulnerable_groups": "Yes",
+      "high_risk_area": "Yes"
+    }
+  },
+  "evidences": [
+    {"filename": "model_card.pdf", "description": "ML model documentation"},
+    {"filename": "training_data_spec.pdf", "description": "Dataset specification"},
+    {"filename": "validation_report.pdf", "description": "Model validation results"},
+    {"filename": "bias_analysis.pdf", "description": "Fairness assessment"},
+    {"filename": "security_audit.pdf", "description": "Security review"},
+    {"filename": "privacy_impact.pdf", "description": "DPIA results"},
+    {"filename": "human_oversight_sop.pdf", "description": "Human review procedures"}
+  ],
+  "controls": [
+    {"iso_clause": "ISO42001:6.1", "status": "implemented", "priority": "high"},
+    {"iso_clause": "ISO42001:6.2", "status": "implemented", "priority": "high"},
+    {"iso_clause": "ISO42001:7.1", "status": "in_progress", "priority": "medium"}
+  ],
+  "incident": {
+    "severity": "medium",
+    "description": "Model drift detected in production",
+    "corrective_action": "Retrained model with recent data",
+    "status": "resolved"
+  }
+}

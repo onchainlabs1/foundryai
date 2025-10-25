@@ -4,18 +4,32 @@ Basic tests for Compliance Suite functionality.
 
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+
+@pytest.fixture
+def setup_test_data(test_client_with_seed):
+    """Create test organization and data for each test using shared fixture."""
+    client, db_session, org_data = test_client_with_seed
+    
+    return {
+        "client": client,
+        "db_session": db_session,
+        "org_data": org_data,
+        "system_id": org_data["system_id"],
+        "headers": org_data["headers"]
+    }
 
 
 class TestComplianceSuiteBasic:
     """Basic tests for compliance suite endpoints."""
     
-    def test_generate_compliance_draft_requires_auth(self):
+    def test_generate_compliance_draft_requires_auth(self, test_client_with_seed):
         """Test that compliance draft generation requires authentication."""
+        client, db_session, org_data = test_client_with_seed
         payload = {"system_id": 1, "docs": ["annex_iv"]}
         
         response = client.post("/reports/draft", json=payload)
@@ -23,25 +37,32 @@ class TestComplianceSuiteBasic:
         assert response.status_code == 401
         assert response.headers.get("WWW-Authenticate") == "API-Key"
     
-    def test_export_document_requires_auth(self):
+    def test_export_document_requires_auth(self, test_client_with_seed):
         """Test that document export requires authentication."""
+        client, db_session, org_data = test_client_with_seed
         response = client.get("/reports/export/annex_iv.md?system_id=1")
         
         assert response.status_code == 401
         assert response.headers.get("WWW-Authenticate") == "API-Key"
     
-    def test_export_document_invalid_type(self):
+    def test_export_document_invalid_type(self, setup_test_data):
         """Test export with invalid document type."""
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
         response = client.get(
             "/reports/export/invalid_type.md?system_id=1",
-            headers={"X-API-Key": "dev-aims-demo-key"}
+            headers=headers
         )
         
         assert response.status_code == 400
         assert "Invalid document type" in response.json()["detail"]
     
-    def test_export_document_invalid_format(self):
+    def test_export_document_invalid_format(self, setup_test_data):
         """Test export with invalid format."""
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
         response = client.get(
             "/reports/export/annex_iv.invalid?system_id=1",
             headers={"X-API-Key": "dev-aims-demo-key"}
@@ -50,8 +71,10 @@ class TestComplianceSuiteBasic:
         assert response.status_code == 400
         assert "Invalid format" in response.json()["detail"]
     
-    def test_refine_document_disabled(self):
+    def test_refine_document_disabled(self, setup_test_data):
         """Test LLM refinement when feature is disabled."""
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
         payload = {
             "doc_type": "annex_iv",
             "system_id": 1,
@@ -82,8 +105,10 @@ class TestComplianceSuiteBasic:
             assert response.status_code == 403
             assert "LLM refinement feature is disabled" in response.json()["detail"]
     
-    def test_citation_enforcement_pattern(self):
+    def test_citation_enforcement_pattern(self, setup_test_data):
         """Test that citation patterns are correctly formatted."""
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
         from app.services.compliance_suite import ComplianceSuiteService
         
         service = ComplianceSuiteService()
@@ -109,8 +134,10 @@ class TestComplianceSuiteBasic:
         assert paragraph["citations"][0]["page"] == 5
         assert paragraph["citations"][0]["checksum"] == "abc123def456"
     
-    def test_missing_evidence_returns_missing_placeholder(self):
+    def test_missing_evidence_returns_missing_placeholder(self, setup_test_data):
         """Test that missing evidence returns appropriate placeholder."""
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
         from app.services.compliance_suite import ComplianceSuiteService
         
         service = ComplianceSuiteService()
@@ -122,8 +149,10 @@ class TestComplianceSuiteBasic:
         assert "[MISSING] Provide evidence for section_2_1_architecture" in paragraph["text"]
         assert len(paragraph["citations"]) == 0
     
-    def test_template_loading(self):
+    def test_template_loading(self, setup_test_data):
         """Test that templates can be loaded."""
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
         from app.services.compliance_suite import ComplianceSuiteService
         
         service = ComplianceSuiteService()
@@ -141,8 +170,10 @@ class TestComplianceSuiteBasic:
             template_path = service.templates_dir / template_name
             assert template_path.exists(), f"Template {template_name} not found"
     
-    def test_section_keys_mapping(self):
+    def test_section_keys_mapping(self, setup_test_data):
         """Test that section keys are properly mapped for each document type."""
+        client = setup_test_data["client"]
+        headers = setup_test_data["headers"]
         from app.services.compliance_suite import ComplianceSuiteService
         
         service = ComplianceSuiteService()

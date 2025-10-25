@@ -402,7 +402,7 @@ async def _generate_annex_iv_zip(
             .order_by(FRIA.created_at.desc())
             .first()
         )
-        if not fria or fria.status != 'submitted':
+        if not fria or (fria.applicable and fria.status != 'submitted'):
             raise HTTPException(
                 status_code=409, 
                 detail="FRIA assessment required but not completed. Please complete the FRIA assessment before exporting documents."
@@ -653,6 +653,20 @@ async def _generate_annex_iv_zip_v2(
     if not system:
         raise HTTPException(status_code=404, detail="System not found")
     
+    # FRIA Gate Enforcement
+    if system.requires_fria_computed:
+        fria = (
+            db.query(FRIA)
+            .filter(FRIA.system_id == system_id, FRIA.org_id == org.id)
+            .order_by(FRIA.created_at.desc())
+            .first()
+        )
+        if not fria or (fria.applicable and fria.status != 'submitted'):
+            raise HTTPException(
+                status_code=409, 
+                detail="FRIA assessment required but not completed. Please complete the FRIA assessment before exporting documents."
+            )
+    
     # Create zip file in memory
     zip_buffer = BytesIO()
     artifacts = []
@@ -774,6 +788,8 @@ Created: {system.id}
             "system_id": system_id,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "generator_version": "2.0.0",
+            "ai_act_class": system.ai_act_class or "minimal",
+            "system_role": system.system_role or "provider",
             "artifacts": artifacts,
             "approvals": [
                 {
@@ -836,6 +852,20 @@ async def _generate_complete_annex_iv(
     )
     if not system:
         raise HTTPException(status_code=404, detail="System not found")
+    
+    # FRIA Gate Enforcement
+    if system.requires_fria_computed:
+        fria = (
+            db.query(FRIA)
+            .filter(FRIA.system_id == system_id, FRIA.org_id == org.id)
+            .order_by(FRIA.created_at.desc())
+            .first()
+        )
+        if not fria or (fria.applicable and fria.status != 'submitted'):
+            raise HTTPException(
+                status_code=409, 
+                detail="FRIA assessment required but not completed. Please complete the FRIA assessment before exporting documents."
+            )
     
     # Create zip file in memory
     zip_buffer = BytesIO()
@@ -958,6 +988,8 @@ Created: {system.id}
             "system_id": system_id,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "generator_version": "3.0.0",
+            "ai_act_class": system.ai_act_class or "minimal",
+            "system_role": system.system_role or "provider",
             "artifacts": artifacts,
             "approvals": [
                 {

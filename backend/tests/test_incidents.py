@@ -2,29 +2,31 @@
 
 from datetime import datetime, timezone
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.conftest import create_test_system
-
-client = TestClient(app)
-
-API_KEY = "dev-aims-demo-key"
-HEADERS = {"X-API-Key": API_KEY}
 
 
-def test_create_incident():
-    """Test creating an incident."""
-    # First, create a system
-    system_payload = {
-        "name": "Test System",
-        "purpose": "Testing",
-        "domain": "testing",
-        "ai_act_class": "minimal"
+@pytest.fixture
+def setup_test_data(test_client_with_seed):
+    """Create test organization and data for each test using shared fixture."""
+    client, db_session, org_data = test_client_with_seed
+    
+    return {
+        "client": client,
+        "db_session": db_session,
+        "org_data": org_data,
+        "system_id": org_data["system_id"],
+        "headers": org_data["headers"]
     }
-    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
-    assert system_response.status_code == 200
-    system_id = system_response.json()["id"]
+
+
+def test_create_incident(setup_test_data):
+    """Test creating an incident."""
+    client = setup_test_data["client"]
+    system_id = setup_test_data["system_id"]
+    headers = setup_test_data["headers"]
     
     payload = {
         "system_id": system_id,
@@ -32,7 +34,7 @@ def test_create_incident():
         "description": "Model performance degradation detected",
         "corrective_action": "Investigating root cause"
     }
-    response = client.post("/incidents", json=payload, headers=HEADERS)
+    response = client.post("/incidents", json=payload, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["severity"] == "medium"
@@ -40,34 +42,32 @@ def test_create_incident():
     assert "id" in data
 
 
-def test_list_incidents():
+def test_list_incidents(setup_test_data):
     """Test listing all incidents."""
-    response = client.get("/incidents", headers=HEADERS)
+    client = setup_test_data["client"]
+    headers = setup_test_data["headers"]
+    response = client.get("/incidents", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
 
 
-def test_list_incidents_by_system():
+def test_list_incidents_by_system(setup_test_data):
     """Test listing incidents for a specific system."""
-    response = client.get("/incidents?system_id=1", headers=HEADERS)
+    client = setup_test_data["client"]
+    system_id = setup_test_data["system_id"]
+    headers = setup_test_data["headers"]
+    response = client.get(f"/incidents?system_id={system_id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
 
 
-def test_update_incident():
+def test_update_incident(setup_test_data):
     """Test updating an incident (resolving it)."""
-    # First, create a system
-    system_payload = {
-        "name": "Test System",
-        "purpose": "Testing",
-        "domain": "testing",
-        "ai_act_class": "minimal"
-    }
-    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
-    assert system_response.status_code == 200
-    system_id = system_response.json()["id"]
+    client = setup_test_data["client"]
+    system_id = setup_test_data["system_id"]
+    headers = setup_test_data["headers"]
     
     # First create an incident
     create_payload = {
@@ -75,7 +75,7 @@ def test_update_incident():
         "severity": "low",
         "description": "Test incident"
     }
-    create_response = client.post("/incidents", json=create_payload, headers=HEADERS)
+    create_response = client.post("/incidents", json=create_payload, headers=headers)
     assert create_response.status_code == 200
     incident_id = create_response.json()["id"]
     
@@ -87,15 +87,16 @@ def test_update_incident():
         "resolved_at": datetime.now(timezone.utc).isoformat(),
         "corrective_action": "Issue resolved"
     }
-    response = client.patch(f"/incidents/{incident_id}", json=update_payload, headers=HEADERS)
+    response = client.patch(f"/incidents/{incident_id}", json=update_payload, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["corrective_action"] == "Issue resolved"
     assert data["resolved_at"] is not None
 
 
-def test_create_incident_requires_auth():
+def test_create_incident_requires_auth(test_client_with_seed):
     """Test that incident creation requires authentication."""
+    client, db_session, org_data = test_client_with_seed
     payload = {"system_id": 1, "severity": "low", "description": "Test"}
     response = client.post("/incidents", json=payload)
     assert response.status_code == 401

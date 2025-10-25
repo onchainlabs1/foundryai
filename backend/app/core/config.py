@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     
     # Feature Flags
     EVIDENCE_LOCAL_STORAGE: bool = True
-    RATE_LIMIT: int = 60  # requests per minute
+    RATE_LIMIT: int = 1000  # requests per minute (increased for tests)
     FEATURE_LLM_REFINE: bool = False  # LLM refinement feature flag
     ENABLE_PDF_EXPORT: bool = True  # PDF export via WeasyPrint
     

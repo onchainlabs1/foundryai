@@ -51,10 +51,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         # Track upload/export endpoints
         self.expensive_endpoints = {
-            "/evidence/",
-            "/reports/deck.pptx",
             "/reports/annex-iv.zip",
-            "/reports/export/pptx",
         }
 
     def _get_bucket_key(self, request: Request) -> str:

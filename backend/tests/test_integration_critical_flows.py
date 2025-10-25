@@ -144,8 +144,17 @@ def test_annex_iv_export_integrity():
     assert response.status_code == 200
     system_id = response.json()["id"]
     
+    # Submit FRIA for high-risk system to allow export
+    fria_data = {
+        "applicable": True,
+        "answers": {"q1": True, "q2": False, "q3": True},
+        "justification": "Test FRIA for export"
+    }
+    response = client.post(f"/systems/{system_id}/fria", json=fria_data, headers=HEADERS)
+    assert response.status_code == 200
+    
     # Export Annex IV
-    response = client.get(f"/reports/export/annex-iv.zip?system_id={system_id}", headers=HEADERS)
+    response = client.get(f"/reports/annex-iv-complete/{system_id}", headers=HEADERS)
     assert response.status_code == 200
     
     # Check integrity headers
@@ -392,7 +401,7 @@ def test_reports_org_isolation():
     assert summary["systems"] >= 1
     
     # Test blocking issues
-    response = client.get("/reports/blocking-issues", headers=HEADERS)
+    response = client.get("/reports/blocking-issues/org", headers=HEADERS)
     assert response.status_code == 200
     response_data = response.json()
     blocking_issues = response_data["blocking_issues"]
@@ -546,8 +555,17 @@ def test_annex_iv_download_with_system_id():
     assert response.status_code == 200
     system_id = response.json()["id"]
     
+    # Submit FRIA for high-risk system to allow export
+    fria_data = {
+        "applicable": True,
+        "answers": {"q1": True, "q2": False, "q3": True},
+        "justification": "Test FRIA for export"
+    }
+    response = client.post(f"/systems/{system_id}/fria", json=fria_data, headers=HEADERS)
+    assert response.status_code == 200
+    
     # Test Annex IV download with specific system_id
-    response = client.get(f"/reports/export/annex-iv.zip?system_id={system_id}", headers=HEADERS)
+    response = client.get(f"/reports/annex-iv-complete/{system_id}", headers=HEADERS)
     assert response.status_code == 200
     
     # Verify response headers indicate a ZIP file
@@ -556,12 +574,12 @@ def test_annex_iv_download_with_system_id():
     assert "X-File-Size" in response.headers
     
     # Test with invalid system_id
-    response = client.get("/reports/export/annex-iv.zip?system_id=99999", headers=HEADERS)
+    response = client.get("/reports/annex-iv-complete/99999", headers=HEADERS)
     assert response.status_code == 404  # System not found
     
-    # Test without system_id parameter
+    # Test without system_id parameter (caught by generic export route)
     response = client.get("/reports/export/annex-iv.zip", headers=HEADERS)
-    assert response.status_code == 422  # Missing required parameter
+    assert response.status_code == 400  # Invalid format (zip not supported)
 
 
 def test_reports_orm_queries():

@@ -1,28 +1,30 @@
 """Tests for Controls endpoints."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.conftest import create_test_system
-
-client = TestClient(app)
-
-API_KEY = "dev-aims-demo-key"
-HEADERS = {"X-API-Key": API_KEY}
 
 
-def test_bulk_upsert_controls():
-    """Test bulk upserting controls."""
-    # First, create a system
-    system_payload = {
-        "name": "Test System",
-        "purpose": "Testing",
-        "domain": "testing",
-        "ai_act_class": "minimal"
+@pytest.fixture
+def setup_test_data(test_client_with_seed):
+    """Create test organization and data for each test using shared fixture."""
+    client, db_session, org_data = test_client_with_seed
+    
+    return {
+        "client": client,
+        "db_session": db_session,
+        "org_data": org_data,
+        "system_id": org_data["system_id"],
+        "headers": org_data["headers"]
     }
-    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
-    assert system_response.status_code == 200
-    system_id = system_response.json()["id"]
+
+
+def test_bulk_upsert_controls(setup_test_data):
+    """Test bulk upserting controls."""
+    client = setup_test_data["client"]
+    system_id = setup_test_data["system_id"]
+    headers = setup_test_data["headers"]
     
     payload = {
         "controls": [
@@ -44,55 +46,42 @@ def test_bulk_upsert_controls():
             }
         ]
     }
-    response = client.post("/controls/bulk", json=payload, headers=HEADERS)
+    response = client.post("/controls/bulk", json=payload, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "upserted" in data
     assert data["upserted"] == 2
 
 
-def test_list_system_controls():
+def test_list_system_controls(setup_test_data):
     """Test listing controls for a system."""
-    # First, create a system
-    system_payload = {
-        "name": "Test System",
-        "purpose": "Testing",
-        "domain": "testing",
-        "ai_act_class": "minimal"
-    }
-    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
-    assert system_response.status_code == 200
-    system_id = system_response.json()["id"]
+    client = setup_test_data["client"]
+    system_id = setup_test_data["system_id"]
+    headers = setup_test_data["headers"]
     
-    response = client.get(f"/systems/{system_id}/controls", headers=HEADERS)
+    response = client.get(f"/systems/{system_id}/controls", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
 
 
-def test_export_soa_csv():
+def test_export_soa_csv(setup_test_data):
     """Test exporting SoA as CSV."""
-    # First, create a system
-    system_payload = {
-        "name": "Test System",
-        "purpose": "Testing",
-        "domain": "testing",
-        "ai_act_class": "minimal"
-    }
-    system_response = client.post("/systems", json=system_payload, headers=HEADERS)
-    assert system_response.status_code == 200
-    system_id = system_response.json()["id"]
+    client = setup_test_data["client"]
+    system_id = setup_test_data["system_id"]
+    headers = setup_test_data["headers"]
     
-    response = client.get(f"/systems/{system_id}/soa.csv", headers=HEADERS)
+    response = client.get(f"/systems/{system_id}/soa.csv", headers=headers)
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
     content = response.text
-    assert "iso_clause" in content
-    assert "applicable" in content
+    assert "ISO/IEC 42001 Clause" in content
+    assert "Applicable" in content
 
 
-def test_bulk_upsert_requires_auth():
+def test_bulk_upsert_requires_auth(test_client_with_seed):
     """Test that bulk upsert requires authentication."""
+    client, db_session, org_data = test_client_with_seed
     payload = {"controls": []}
     response = client.post("/controls/bulk", json=payload)
     assert response.status_code == 401

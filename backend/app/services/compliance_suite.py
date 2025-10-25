@@ -21,6 +21,7 @@ from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.services.document_generator import WEASYPRINT_AVAILABLE
 from app.models import (
     AISystem,
     Organization,
@@ -514,11 +515,14 @@ Generated: {timestamp}
     def _convert_to_pdf(self, content: str, filename: str) -> Tuple[str, bytes]:
         """Convert markdown content to PDF format."""
         try:
-            import markdown
-            from weasyprint import CSS, HTML
+            # Check WeasyPrint availability first
+            self._check_weasyprint_availability()
             
             if not settings.ENABLE_PDF_EXPORT:
                 raise ValueError("PDF export is disabled")
+            
+            import markdown
+            from weasyprint import CSS, HTML
             
             # Convert markdown to HTML
             html_content = markdown.markdown(content)
@@ -540,6 +544,11 @@ Generated: {timestamp}
             return filename, pdf_bytes
             
         except ImportError:
+            raise ValueError("WeasyPrint not available for PDF export")
+    
+    def _check_weasyprint_availability(self) -> None:
+        """Check if WeasyPrint is available for PDF export."""
+        if not WEASYPRINT_AVAILABLE:
             raise ValueError("WeasyPrint not available for PDF export")
 
 

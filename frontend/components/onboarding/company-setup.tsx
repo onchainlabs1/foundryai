@@ -469,7 +469,7 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
                   onValueChange={(value) => setValue('dpiaStatus', value)}
                 >
                   <SelectTrigger className="bg-background/50 border-amber-200 focus:border-amber-400">
-                    <SelectValue placeholder="Selecione o status do DPIA..." />
+                    <SelectValue placeholder="Select DPIA status..." />
                   </SelectTrigger>
                   <SelectContent>
                     {dpiaOptions.map((option) => (
@@ -480,7 +480,7 @@ export default function CompanySetup({ data, onUpdate }: CompanySetupProps) {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-amber-600">
-                  Data Protection Impact Assessment (GDPR Art. 35) - selecione o status atual
+                  Data Protection Impact Assessment (GDPR Art. 35) - select current status
                 </p>
                 {errors.dpiaStatus && (
                   <p className="text-xs text-red-500">{errors.dpiaStatus.message}</p>
