@@ -317,7 +317,7 @@ export default function ReportsPage() {
                       return;
                     }
                     const systemId = systems[0].id;
-                    await downloadFile(`/reports/annex-iv.zip?system_id=${systemId}`, 'annex-iv.zip');
+                    await downloadFile(`/reports/annex-iv/${systemId}`, 'annex-iv.zip');
                   } catch (error) {
                     console.error('Download failed:', error);
                     alert('Download failed. Please check your API key and ensure you have systems configured.');

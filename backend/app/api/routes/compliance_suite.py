@@ -96,7 +96,7 @@ def export_compliance_document(
         )
     
     try:
-        filename, content_bytes = compliance_suite_service.export_document(
+        filename, content_bytes, sections = compliance_suite_service.export_document(
             db=db,
             org_id=org.id,
             system_id=system_id,
@@ -116,7 +116,7 @@ def export_compliance_document(
             media_type=content_types[format],
             headers={
                 "Content-Disposition": f"attachment; filename={filename}",
-                "X-Bundle-Hash": compliance_suite_service._generate_bundle_hash({}),
+                "X-Bundle-Hash": compliance_suite_service._generate_bundle_hash(sections),
                 "X-Generated-At": datetime.now(timezone.utc).isoformat()
             }
         )

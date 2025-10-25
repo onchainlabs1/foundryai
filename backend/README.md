@@ -72,8 +72,14 @@ uvicorn app.main:app --reload
 ### Testing
 
 ```bash
-# Run tests
+# Install test dependencies
+pip install -r requirements.txt
+
+# Run all tests
 pytest
+
+# Run with environment variables for consistent results
+SECRET_KEY='development-secret-key' ORG_NAME='Test Org' ORG_API_KEY='dev-aims-demo-key' pytest
 
 # Run linter
 ruff --select I,E,F .
@@ -82,6 +88,8 @@ ruff --select I,E,F .
 black .
 isort .
 ```
+
+**Note**: The test suite requires `pytest-asyncio>=0.23.0` for async test support. It's included in `requirements.txt`.
 
 ### Pre-commit Hooks
 
@@ -131,6 +139,9 @@ pre-commit run --all-files
 - `GET /reports/annex-iv/{system_id}` - Export Annex IV package (ZIP)
 - `GET /reports/deck.pptx` - Export Executive deck
 - `GET /reports/export/pptx` - Alias for deck.pptx
+- `GET /reports/export/{doc_type}.{format}` - Export documents (MD, DOCX, PDF)
+
+**Note**: Export endpoints return `X-Bundle-Hash` header with SHA-256 hash of document content for integrity verification.
 
 ### Deprecated Endpoints
 - `GET /reports/export/annex-iv.zip` - Use `/reports/annex-iv/{system_id}` instead

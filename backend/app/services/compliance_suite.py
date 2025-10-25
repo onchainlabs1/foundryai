@@ -426,7 +426,7 @@ Generated: {timestamp}
         system_id: Optional[int], 
         doc_type: str, 
         format: str
-    ) -> Tuple[str, bytes]:
+    ) -> Tuple[str, bytes, Dict[str, Dict]]:
         """
         Export a document in the specified format.
         
@@ -460,6 +460,9 @@ Generated: {timestamp}
         )
         
         content = doc_result["content"]
+        sections = self._get_evidence_grounded_sections(
+            db, org_id, system_id, doc_type
+        )
         
         # Generate filename
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -468,11 +471,11 @@ Generated: {timestamp}
         
         # Convert to requested format
         if format == "md":
-            return filename, content.encode("utf-8")
+            return filename, content.encode("utf-8"), sections
         elif format == "docx":
-            return self._convert_to_docx(content, filename)
+            return (*self._convert_to_docx(content, filename), sections)
         elif format == "pdf":
-            return self._convert_to_pdf(content, filename)
+            return (*self._convert_to_pdf(content, filename), sections)
         else:
             raise ValueError(f"Unsupported format: {format}")
     
